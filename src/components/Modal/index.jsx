@@ -3,11 +3,14 @@ import { createPortal } from 'react-dom'
 import cx from 'classnames'
 
 import useTransition from './useTransition'
+import { createModalStack, isEnterTarget } from './keys'
 
 import './style.scss'
 
 const FOCUSABLE =
   'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+
+const modalStack = createModalStack()
 
 // the first text field gets the focus when a dialog opens
 const AUTO_FOCUS =
@@ -26,6 +29,17 @@ export default function Modal({
   const { isMounted, isVisible } = useTransition(isOpened, 200)
   const bodyRef = useRef(null)
   const openerRef = useRef(null)
+  // the identity of this modal in the stack of open modals
+  const tokenRef = useRef({})
+
+  useEffect(() => {
+    if (!isOpened) {
+      return
+    }
+    const token = tokenRef.current
+    modalStack.push(token)
+    return () => modalStack.remove(token)
+  }, [isOpened])
 
   // keep the element that had the focus, and give it back on close
   useEffect(() => {
@@ -54,6 +68,10 @@ export default function Modal({
     }
     const handleKeyDown = e => {
       const body = bodyRef.current
+      // a dialog under another dialog does not handle the keys
+      if (!modalStack.isTop(tokenRef.current)) {
+        return
+      }
       if (e.key === 'Escape' && onClose) {
         onClose()
         return
@@ -80,10 +98,11 @@ export default function Modal({
           first.focus()
         }
       }
-      // Enter does the main action (the first footer button), except in a text area, on a button or in the editor
+      // Enter does the main action (the first footer button) from a text field
       if (e.key === 'Enter' && !e.defaultPrevented && !e.isComposing) {
         const t = e.target
-        if (t.closest && t.closest('textarea, button, a, .cm-editor, .Select__control')) {
+        const target = { tagName: t.tagName, type: t.type, role: t.getAttribute('role') }
+        if (!isEnterTarget(target) || t.closest('.Select__control')) {
           return
         }
         const primary = body.querySelector(

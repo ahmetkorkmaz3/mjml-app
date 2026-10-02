@@ -34,6 +34,8 @@ import foldByLevel from 'helpers/codemirror/fold-by-level'
 import { migrateToMJML4 } from 'helpers/mjml'
 import { readFile, writeFile } from 'helpers/fs'
 import { setPreview } from 'actions/preview'
+import { updateProjectMtime } from 'actions/projects'
+import { path } from 'helpers/api'
 
 import './styles.scss'
 
@@ -71,6 +73,7 @@ export default connect(
     addAlert,
     setEditorStatus,
     resetEditorStatus,
+    updateProjectMtime,
   },
 )(
   class FileEditor extends Component {
@@ -312,6 +315,7 @@ export default connect(
         await writeFile(fileName, mjml)
         this._lastWritten[fileName] = mjml
         this.updateDirty()
+        this.handleWritten(fileName)
         addAlert('File successfully saved', 'success')
       } catch (e) {
         addAlert('Could not save file', 'error')
@@ -420,6 +424,14 @@ export default connect(
       await writeFile(fileName, mjml)
       this._lastWritten[fileName] = mjml
       this.updateDirty()
+      this.handleWritten(fileName)
+    }
+
+    // the card of the project shows the modification time of its index file
+    handleWritten(fileName) {
+      if (path.basename(fileName) === 'index.mjml') {
+        this.props.updateProjectMtime(path.dirname(fileName), Date.now())
+      }
     }
 
     debounceWrite = debounce((fileName, mjml) => {

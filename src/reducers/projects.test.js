@@ -21,11 +21,18 @@ describe('projects reducer', () => {
     expect(reducer(null, touch('/a'))).toBe(null)
   })
 
-  it('sets the modification time when the preview changes', () => {
-    const next = reducer(state, {
+  it('keeps the modification time when only the preview changes', () => {
+    const withTime = fromJS([{ path: '/a', mtime: 5 }])
+    const next = reducer(withTime, {
       type: 'PROJECT_UPDATE_PREVIEW',
-      payload: { path: '/b', html: 'x' },
+      payload: { path: '/a', html: 'x' },
     })
-    expect(typeof next.getIn([1, 'mtime'])).toBe('number')
+    expect(next.getIn([0, 'mtime'])).toBe(5)
+    expect(next.getIn([0, 'html'])).toBe('x')
+  })
+
+  it('sets the modification time when the index file is written', () => {
+    const next = reducer(state, { type: 'PROJECT_SET_MTIME', payload: { path: '/b', mtime: 42 } })
+    expect(next.getIn([1, 'mtime'])).toBe(42)
   })
 })

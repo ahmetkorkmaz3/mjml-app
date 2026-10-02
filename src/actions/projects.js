@@ -158,6 +158,13 @@ export function updateProjectPreview(p, html) {
   }
 }
 
+export function updateProjectMtime(p, mtime) {
+  return {
+    type: 'PROJECT_SET_MTIME',
+    payload: { path: p, mtime },
+  }
+}
+
 export function renameProject(oldPath, newPath) {
   return async dispatch => {
     await rename(oldPath, newPath)
