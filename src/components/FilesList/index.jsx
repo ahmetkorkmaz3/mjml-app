@@ -19,6 +19,7 @@ import { addAlert } from 'reducers/alerts'
 import api from 'helpers/api'
 import { readDir, sortFiles, rename, copyFile } from 'helpers/fs'
 import { duplicateName, fileKind, splitName } from 'helpers/files'
+import { fitPreviewWidth } from 'helpers/layout'
 import { showContextMenu } from 'helpers/contextMenu'
 import { formatShortcut } from 'helpers/shortcut'
 import { setPreview } from 'actions/preview'
@@ -79,6 +80,7 @@ export default connect(
       renamedFile: null,
       newName: '',
       isOldSyntaxDetected: false,
+      mainWidth: 0,
     }
 
     _hasFocused = false
@@ -112,6 +114,27 @@ export default connect(
     componentWillUnmount() {
       this._unmounted = true
       this._unsubscribeFocus()
+      if (this._mainObserver) {
+        this._mainObserver.disconnect()
+      }
+    }
+
+    // the width of the editor and the preview, to keep room for the editor
+    setMainRef = node => {
+      if (this._mainObserver) {
+        this._mainObserver.disconnect()
+        this._mainObserver = null
+      }
+      if (!node) {
+        return
+      }
+      this._mainObserver = new ResizeObserver(([entry]) => {
+        const mainWidth = Math.round(entry.contentRect.width)
+        if (!this._unmounted && mainWidth !== this.state.mainWidth) {
+          this.setState({ mainWidth })
+        }
+      })
+      this._mainObserver.observe(node)
     }
 
     handleDetectOldSyntax = val => this.setState({ isOldSyntaxDetected: val })
@@ -456,29 +479,35 @@ export default connect(
     }
 
     renderMain() {
-      const { isDragging } = this.state
+      const { isDragging, mainWidth } = this.state
       const { path, previewSize, previewCollapsed } = this.props
 
       if (previewCollapsed) {
         return this.renderEditor()
       }
+      const previewWidth = fitPreviewWidth(previewSize.get('current'), mainWidth, {
+        min: previewSize.get('mobile'),
+        editorMin: 320,
+      })
       return (
-        <SplitPane
-          direction="horizontal"
-          onResizeStart={this.startDrag}
-          onResizeEnd={this.handlePreviewPanelStopDrag}
-        >
-          <Pane>{this.renderEditor()}</Pane>
-          <Pane
-            size={previewSize.get('current')}
-            maxSize={previewSize.get('desktop')}
-            minSize={previewSize.get('mobile')}
+        <div className="sticky" ref={this.setMainRef}>
+          <SplitPane
+            direction="horizontal"
+            onResizeStart={this.startDrag}
+            onResizeEnd={this.handlePreviewPanelStopDrag}
           >
-            <div className="sticky fs-0 FilesList--preview-container">
-              <FilePreview disablePointer={isDragging} iframeBase={path} />
-            </div>
-          </Pane>
-        </SplitPane>
+            <Pane minSize={320}>{this.renderEditor()}</Pane>
+            <Pane
+              size={previewWidth}
+              maxSize={previewSize.get('desktop')}
+              minSize={previewSize.get('mobile')}
+            >
+              <div className="sticky fs-0 FilesList--preview-container">
+                <FilePreview disablePointer={isDragging} iframeBase={path} />
+              </div>
+            </Pane>
+          </SplitPane>
+        </div>
       )
     }
 

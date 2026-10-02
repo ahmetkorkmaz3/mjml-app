@@ -58,7 +58,11 @@
 .Modal--body {
   position: relative;
   z-index: 1;
-  outline: none;
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+  }
   opacity: 0;
   transform: scale(0.98);
   transition:
