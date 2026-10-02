@@ -36,7 +36,10 @@ class MailjetInfos extends Component {
       <div className="brand">
         <Collapse isOpened={!isOpened}>
           <div className="d-f ai-c p-20">
-            <div className="d-f ai-c jc-c" style={{ background: 'rgba(white, 0.1)' }}>
+            <div
+              className="d-f ai-c jc-c"
+              style={{ background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)' }}
+            >
               <LogoMailjet height={30} className="mr-20" />
               <div className="mr-10 t-small" style={{ lineHeight: '18px' }}>
                 <span>
@@ -62,7 +65,7 @@ class MailjetInfos extends Component {
             <div className="mb-20 d-f ai-c">
               <LogoMailjet height={20} className="mr-20 anim-mailjet" />
               <div className="t-small" style={{ lineHeight: '18px' }}>
-                <span className="c-white">{'MJML App uses the Mailjet API to send emails. '}</span>
+                <span>{'MJML App uses the Mailjet API to send emails. '}</span>
                 <a href="" onClick={this.handleGoToMailjet} className="a white">
                   {'Create your account'}
                 </a>

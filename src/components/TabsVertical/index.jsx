@@ -10,6 +10,20 @@ class TabsVertical extends PureComponent {
 
   handleSetTab = index => this.setState({ index })
 
+  handleKeyDown = (e, count) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') {
+      return
+    }
+    e.preventDefault()
+    const step = e.key === 'ArrowDown' ? 1 : -1
+    const index = (this.state.index + step + count) % count
+    this.setState({ index })
+    const tabs = e.currentTarget.querySelectorAll('.TabsVertical--Tab')
+    if (tabs[index]) {
+      tabs[index].focus()
+    }
+  }
+
   render() {
     const { children } = this.props
 
@@ -19,25 +33,33 @@ class TabsVertical extends PureComponent {
     const tabToDisplay = childs[index]
 
     return (
-      <div className="TabsVertical sticky">
-        <div className="TabsVertical--Tabs">
+      <div className="TabsVertical">
+        <div
+          className="TabsVertical--Tabs"
+          role="tablist"
+          aria-orientation="vertical"
+          onKeyDown={e => this.handleKeyDown(e, childs.length)}
+        >
           {childs.map(({ props: { title, icon } }, i) => (
-            <div
+            <button
+              type="button"
+              role="tab"
+              aria-selected={i === index}
+              tabIndex={i === index ? 0 : -1}
               key={title}
               className={cx('TabsVertical--Tab', {
                 isActive: i === index,
               })}
               onClick={() => this.handleSetTab(i)}
             >
-              {!!icon &&
-                createElement(icon, {
-                  className: 'mr-10',
-                })}
+              {!!icon && createElement(icon, { className: 'TabsVertical--icon', size: 15 })}
               {title}
-            </div>
+            </button>
           ))}
         </div>
-        <div className="TabsVertical--View">{tabToDisplay}</div>
+        <div className="TabsVertical--View" role="tabpanel">
+          {tabToDisplay}
+        </div>
       </div>
     )
   }
