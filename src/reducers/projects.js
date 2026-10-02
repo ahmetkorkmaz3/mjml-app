@@ -27,7 +27,18 @@ export default handleActions(
       if (index === -1) {
         return state
       }
-      return state.update(index, p => p.set('html', html))
+      // the index file changed now
+      return state.update(index, p => p.set('html', html).set('mtime', Date.now()))
+    },
+    PROJECT_TOUCH: (state, { payload: path }) => {
+      if (!state) {
+        return state
+      }
+      const index = state.findIndex(p => p.get('path') === path)
+      if (index < 1) {
+        return state
+      }
+      return state.delete(index).unshift(state.get(index))
     },
     PROJECT_REMOVE: (state, { payload: path }) => {
       return state.filter(p => p.get('path') !== path)

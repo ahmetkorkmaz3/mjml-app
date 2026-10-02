@@ -25,6 +25,7 @@ import {
   mkdir,
   fileExists,
   isValidDir,
+  getMtime,
 } from 'helpers/fs'
 
 const HOME_DIR = api.homedir
@@ -65,6 +66,8 @@ export function openProject(projectPath) {
   return dispatch => {
     router.navigate(`/project?path=${encodeURIComponent(projectPath)}`, { replace: true })
     dispatch(loadIfNeeded(projectPath))
+    dispatch({ type: 'PROJECT_TOUCH', payload: projectPath })
+    dispatch(saveSettings())
   }
 }
 
@@ -98,10 +101,14 @@ async function loadProject(p, mjmlPath) {
         if (fallback) indexFilePath = path.join(p, fallback)
       }
 
+      res.mtime = await getMtime(indexFilePath)
       const mjmlContent = await readFile(indexFilePath)
       const { html: htmlContent } = await mjml2html(mjmlContent, indexFilePath, mjmlPath)
       res.html = htmlContent
     } catch (e) {}
+    if (!res.mtime) {
+      res.mtime = await getMtime(p)
+    }
   }
   return res
 }

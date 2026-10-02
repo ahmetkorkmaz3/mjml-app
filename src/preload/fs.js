@@ -14,6 +14,15 @@ export function writeFile(p, data, options) {
   return fs.writeFile(p, data, options)
 }
 
+// the last modification time in ms, or null when the file cannot be read
+export async function getMtime(p) {
+  try {
+    return (await fs.stat(p)).mtimeMs
+  } catch (err) {
+    return null
+  }
+}
+
 // fails when the destination exists
 export function copyFile(src, dest) {
   return fs.copyFile(src, dest, constants.COPYFILE_EXCL)
