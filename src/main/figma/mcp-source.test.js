@@ -100,6 +100,19 @@ describe('getDesignFromMcp', () => {
     expect(client.close).toHaveBeenCalled()
   })
 
+  it('does not map non-limit errors to FIGMA_MCP_LIMIT', async () => {
+    const client = fakeClient({
+      get_design_context: {
+        isError: true,
+        content: [{ type: 'text', text: 'Failed to generate design context' }],
+      },
+    })
+    await expect(
+      getDesignFromMcp({ nodeId: '1:2', url: 'x', connect: async () => client }),
+    ).rejects.toMatchObject({ code: 'FIGMA_ERROR' })
+    expect(client.close).toHaveBeenCalled()
+  })
+
   it('works without variables and metadata', async () => {
     const client = fakeClient({
       get_variable_defs: { isError: true, content: [{ type: 'text', text: 'No variables' }] },
