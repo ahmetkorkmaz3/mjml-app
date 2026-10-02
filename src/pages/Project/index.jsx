@@ -1,7 +1,7 @@
 import { Component } from 'react'
 import { path as pathModule } from 'helpers/api'
 import { connect } from 'react-redux'
-import { FaCog, FaFolderOpen } from 'react-icons/fa'
+import { FaCog, FaFolderOpen, FaFigma } from 'react-icons/fa'
 import {
   MdContentCopy as IconCopy,
   MdCode as IconCode,
@@ -32,6 +32,7 @@ import FilesList from 'components/FilesList'
 import BackButton from './BackButton'
 import SendModal from './SendModal'
 import AddFileModal from './AddFileModal'
+import FigmaImportModal from './FigmaImportModal'
 import RemoveFileModal from './RemoveFileModal'
 import PreviewSettings from './PreviewSettings'
 
@@ -167,6 +168,21 @@ const ConnectedProjectPage = connect(
 
     openAddFileModal = () => this.props.openModal('addFile')
 
+    openFigmaImportModal = () => this.props.openModal('figmaImport')
+
+    handleFigmaImported = ({ filePath, warnings, usage }) => {
+      const { addAlert } = this.props
+      this._filelist.refresh()
+      this.setState({ activeFile: { isFolder: false, name: pathModule.basename(filePath) } })
+      addAlert(
+        `Done: ${usage.inputTokens} input tokens, ${usage.outputTokens} output tokens, ${usage.calls} model calls`,
+        'success',
+      )
+      if (warnings.length) {
+        addAlert(['Import warnings:', ...warnings.map(w => `■ ${w}`)], 'info', { autoHide: false })
+      }
+    }
+
     handleOpenSettings = () => this.setState({ showSettings: true })
     handleCloseSettings = () => this.setState({ showSettings: false })
 
@@ -210,6 +226,10 @@ const ConnectedProjectPage = connect(
               <Button ghost onClick={this.openAddFileModal}>
                 <IconAdd className="mr-5" />
                 {'New file'}
+              </Button>
+              <Button ghost onClick={this.openFigmaImportModal}>
+                <FaFigma className="mr-5" />
+                {'Import from Figma'}
               </Button>
             </div>
             <div className="d-f flow-h-10">
@@ -295,6 +315,7 @@ const ConnectedProjectPage = connect(
 
           <SendModal currentProjectPath={path} />
           <AddFileModal rootPath={path} onAdd={this.handleAddFile} />
+          <FigmaImportModal rootPath={path} onImported={this.handleFigmaImported} />
           <RemoveFileModal rootPath={path} onRemove={this.handleRemoveFile} />
           <PreviewSettings
             currentProjectPath={path}
