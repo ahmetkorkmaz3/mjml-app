@@ -392,7 +392,7 @@ export default connect(
               size="sm"
               icon
               aria-label="Import from Figma"
-              data-tooltip="Import from Figma"
+              data-tooltip={`Import from Figma (${formatShortcut('CmdOrCtrl+Shift+F', api.platform)})`}
               onClick={onImportFigma}
             >
               <FaFigma size={12} />

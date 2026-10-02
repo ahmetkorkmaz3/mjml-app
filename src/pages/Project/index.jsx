@@ -11,8 +11,10 @@ import {
   MdKeyboardArrowDown as IconDown,
   MdMoreHoriz as IconMore,
   MdSettings as IconSettings,
+  MdAutoAwesome as IconAI,
 } from 'react-icons/md'
 
+import { FaFigma as IconFigma } from 'react-icons/fa'
 import { useSearchParams } from 'react-router'
 import beautifyJS from 'js-beautify'
 
@@ -169,9 +171,7 @@ const ConnectedProjectPage = connect(
       const isMJML = this.isMJMLFile()
       const id = await showContextMenu([
         { id: 'beautify', label: 'Beautify', enabled: isMJML, accelerator: 'CmdOrCtrl+Shift+B' },
-        { id: 'refine', label: 'Refine with AI…', enabled: isMJML },
         { type: 'separator' },
-        { id: 'import-figma', label: 'Import from Figma…' },
         { id: 'templating', label: 'Templating…' },
         { type: 'separator' },
         {
@@ -433,6 +433,23 @@ const ConnectedProjectPage = connect(
                     },
                   ]}
                 />
+                <Button
+                  variant="ghost"
+                  disabled={!isMJMLFile}
+                  onClick={this.openRefineModal}
+                  data-tooltip={`Refine with AI (${shortcut('CmdOrCtrl+K')})`}
+                >
+                  <IconAI size={15} />
+                  {'AI'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={this.openFigmaImportModal}
+                  data-tooltip={`Import from Figma (${shortcut('CmdOrCtrl+Shift+F')})`}
+                >
+                  <IconFigma size={14} />
+                  {'Figma'}
+                </Button>
                 <Button
                   variant="ghost"
                   disabled={!hasPreview}

@@ -67,6 +67,11 @@ describe('buildMenuTemplate', () => {
     expect(findItem(t, 'export-html').enabled).toBe(true)
   })
 
+  it('gives shortcuts to the AI and Figma commands', () => {
+    expect(findItem(build(project), 'refine').accelerator).toBe('CmdOrCtrl+K')
+    expect(findItem(build(project), 'import-figma').accelerator).toBe('CmdOrCtrl+Shift+F')
+  })
+
   it('enables Save only when auto-save is off', () => {
     expect(findItem(build(project), 'save').enabled).toBe(false)
     expect(findItem(build({ ...project, preventAutoSave: true }), 'save').enabled).toBe(true)
