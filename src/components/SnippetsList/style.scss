@@ -1,7 +1,7 @@
-@import '../../styles/vars.scss';
+@use '../../styles/vars.scss';
 
 .SnippetsList {
-  border-left: 1px solid $almostWhite;
+  border-left: 1px solid vars.$almostWhite;
   width: 50%;
   margin-left: 20px;
   padding: 0 20px 40px 20px;
@@ -15,7 +15,7 @@
 .SnippetItem {
   margin: 10px 0;
   padding: 20px 10px;
-  border: 1px solid $almostWhite;
+  border: 1px solid vars.$almostWhite;
   justify-content: space-between;
   display: block;
 }
@@ -26,7 +26,7 @@
 }
 
 .SnippetItem--item-actions {
-  display :flex;
+  display: flex;
   .action {
     width: 20px;
     height: 20px;
@@ -40,7 +40,7 @@
   }
   .action-remove {
     &:hover {
-      color: $red;
+      color: vars.$red;
     }
   }
 }

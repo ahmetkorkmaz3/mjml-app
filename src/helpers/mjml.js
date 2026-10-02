@@ -1,91 +1,23 @@
-import mjml2html from 'mjml'
-import { get } from 'lodash'
-import migrate from 'mjml-migrate'
-import path from 'path'
-import stream from 'stream'
+import get from 'lodash/get'
 
-import { execFile, exec } from 'helpers/fs'
+import api from 'helpers/api'
 
-import storage from 'electron-json-storage'
-import { promisify } from 'es6-promisify'
-
-const storageGet = promisify(storage.get)
-
-export default function(mjmlContent, filePath, mjmlPath = null, options = {}) {
+export default function mjml2html(mjmlContent, filePath, mjmlPath = null, options = {}) {
   return new Promise(resolve => {
     window.requestIdleCallback(async () => {
       try {
-        const settings = await storageGet('settings')
-        const useMjmlConfig = get(settings, 'mjml.useMjmlConfig')
-        const mjmlConfigPath = get(settings, 'mjml.mjmlConfigPath')
-        const keepComments = get(settings, 'mjml.keepComments', true)
-        const preventAutoSave = get(settings, 'editor.preventAutoSave', false)
+        const settings = await api.storage.get('settings')
 
-        if (mjmlPath) {
-          let mjmlConfigOption = []
-          if (useMjmlConfig) {
-            if (mjmlConfigPath) {
-              mjmlConfigOption = [`--config.mjmlConfigPath=${settings.mjml.mjmlConfigPath}`]
-            } else {
-              mjmlConfigOption = [`--config.mjmlConfigPath=${path.dirname(filePath)}`]
-            }
-          }
+        const res = await api.mjml.render(mjmlContent, filePath, {
+          mjmlPath,
+          minify: !!options.minify,
+          keepComments: get(settings, 'mjml.keepComments', true),
+          useMjmlConfig: get(settings, 'mjml.useMjmlConfig', false),
+          mjmlConfigPath: get(settings, 'mjml.mjmlConfigPath'),
+          preventAutoSave: get(settings, 'editor.preventAutoSave', false),
+        })
 
-          const args = [
-            '-s',
-            '--config.validationLevel=skip',
-            ...(options.minify ? ['-m'] : []),
-            ...(keepComments ? [] : ['--config.keepComments=0']),
-            ...mjmlConfigOption,
-          ]
-
-          if (!mjmlContent.trim().startsWith('<mjml') || preventAutoSave) {
-            const stdinStream = new stream.Readable()
-
-            if (!mjmlContent.trim().startsWith('<mjml')) {
-              stdinStream.push(wrapIntoMJMLTags(mjmlContent))
-            } else {
-              stdinStream.push(mjmlContent)
-            }
-
-            stdinStream.push(null)
-            args.push('-i')
-
-            const res = await execFile(mjmlPath, args, { maxBuffer: 500 * 1024 }, stdinStream)
-            if (res.err) {
-              return resolve({ html: '', errors: [] })
-            }
-
-            resolve({ html: res.stdout, errors: [] })
-          } else {
-            const res = await exec(`${mjmlPath} "${filePath}" ${args.join(' ')}`, {
-              maxBuffer: 500 * 1024,
-            })
-
-            if (res.err) {
-              return resolve({ html: '', errors: [] })
-            }
-
-            resolve({ html: res.stdout, errors: [] })
-          }
-        } else {
-          if (!mjmlContent.trim().startsWith('<mjml')) {
-            mjmlContent = wrapIntoMJMLTags(mjmlContent)
-          }
-
-          const mjmlOptions = {
-            filePath,
-            minify: !!options.minify,
-            keepComments,
-            mjmlConfigPath: useMjmlConfig
-              ? settings.mjml.mjmlConfigPath || path.dirname(filePath)
-              : null,
-          }
-
-          const res = mjml2html(mjmlContent, mjmlOptions)
-
-          resolve({ html: res.html || '', errors: res.errors || [] })
-        }
+        resolve(res)
       } catch (e) {
         resolve({ html: '', errors: [] })
       }
@@ -93,14 +25,6 @@ export default function(mjmlContent, filePath, mjmlPath = null, options = {}) {
   })
 }
 
-export function wrapIntoMJMLTags(content) {
-  return `<mjml>
-  <mj-body>
-    ${content}
-  </mj-body>
-</mjml>`
-}
-
 export function migrateToMJML4(content) {
-  return migrate(content)
+  return api.mjml.migrateToMJML4(content)
 }

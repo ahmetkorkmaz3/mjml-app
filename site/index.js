@@ -18,8 +18,7 @@ const dlWin = document.getElementById('dl-win')
 const dlOSX = document.getElementById('dl-osx')
 
 const isNotBeta = version =>
-  !version.html_url.includes('beta') &&
-  !version.html_url.includes('alpha')
+  !version.html_url.includes('beta') && !version.html_url.includes('alpha')
 
 fetch(REL_URL)
   .then(res => res.json())
@@ -27,43 +26,43 @@ fetch(REL_URL)
     const lastVersion = res.filter(isNotBeta)[0]
     document.getElementById('dl-btn-label').innerHTML = `&nbsp;- ${lastVersion.tag_name}`
     document.getElementById('dl-dl-dl').innerHTML = `Download for ${osLabel}`
-    
+
     const { name, assets } = lastVersion
 
     const linuxName = `mjml-app-${name}-linux-x64.tar.gz`
     const winName = `mjml-app-${name}-win.exe`
     const osxName = `mjml-app-${name}-mac.dmg`
-    
+
     let linuxUrl, winUrl, osxUrl
-    
+
     for (let i = 0; i < assets.length; i++) {
       switch (assets[i].name) {
         case linuxName:
           linuxUrl = assets[i].browser_download_url
-          break;
+          break
         case winName:
           winUrl = assets[i].browser_download_url
-          break;
+          break
         case osxName:
           osxUrl = assets[i].browser_download_url
-          break;
+          break
       }
     }
-    
+
     if (linuxUrl) dlLinux.setAttribute('href', linuxUrl)
     if (winUrl) dlWin.setAttribute('href', winUrl)
     if (osxUrl) dlOSX.setAttribute('href', osxUrl)
-    
+
     switch (os) {
       case 'linux':
         dlGeneral.setAttribute('href', linuxUrl)
-        break;
+        break
       case 'windows':
         dlGeneral.setAttribute('href', winUrl)
-        break;
+        break
       case 'osx':
         dlGeneral.setAttribute('href', osxUrl)
-        break;
+        break
     }
   })
 
@@ -75,9 +74,8 @@ dlWin.addEventListener('click', createTracking('windows'))
 dlOSX.addEventListener('click', createTracking('osx'))
 
 function createTracking(os) {
-  return function() {
+  return function () {
     dataLayer.push({
-      // eslint-disable-line
       eventValue: 'mjmlApp-Downloaded',
       event: 'mjml-app',
       button: os,

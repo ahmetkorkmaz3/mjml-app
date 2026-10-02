@@ -1,4 +1,4 @@
-@import '../../styles/vars.scss';
+@use '../../styles/vars.scss';
 
 .Alerts {
   position: fixed;
@@ -6,6 +6,8 @@
   right: 10px;
   left: 10px;
   z-index: 99999;
+  display: flex;
+  flex-direction: column-reverse;
 }
 
 .Alerts--item {
@@ -16,6 +18,7 @@
   padding: 20px;
   cursor: default;
   border-radius: 3px;
+  animation: 200ms ease-out alertEnter;
 
   &.error {
     background: #672727;
@@ -23,8 +26,19 @@
   }
 
   &.success {
-    background: $blue;
+    background: vars.$blue;
     border: 1px solid rgba(black, 0.2);
     color: white;
+  }
+}
+
+@keyframes alertEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }

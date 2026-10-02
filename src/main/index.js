@@ -1,31 +1,41 @@
 import { app, BrowserWindow, Menu } from 'electron'
-import * as path from 'path'
-import { format as formatUrl } from 'url'
+import { join } from 'node:path'
 import { autoUpdater } from 'electron-updater'
+import fixPath from 'fix-path'
 
-import { saveWindowSettings, getWindowSettings } from 'helpers/window-settings'
-import buildMenu from 'menu'
+import { saveWindowSettings, getWindowSettings } from './window-settings'
+import { registerIpcHandlers } from './ipc'
+import buildMenu from './menu'
 
-const isProduction = process.env.NODE_ENV === 'production'
-const isDevelopment = !isProduction
+const isDevelopment = !app.isPackaged
 
 // allows app to find node when launched from GUI
-const fixPath = require('fix-path')
-
 fixPath()
 
-let mainWindow
-let menu
+let mainWindow = null
+let isRendererReady = false
 
-const [, openPath] = process.argv
+// if we double clicked on mjml file (or launched app with argument)
+// we send path to renderer, to directly open/create project
+let openPath = process.argv.slice(1).find(arg => arg.endsWith('.mjml')) || null
 
-const installExtensions = async () => {
-  const installer = require('electron-devtools-installer')
-  const forceDownload = !!process.env.UPGRADE_EXTENSIONS
-  const extensions = ['REACT_DEVELOPER_TOOLS', 'REDUX_DEVTOOLS']
-  return Promise.all(
-    extensions.map(name => installer.default(installer[name], forceDownload)),
-  ).catch(console.log) // eslint-disable-line
+function sendOpenPath() {
+  if (mainWindow && isRendererReady && openPath) {
+    mainWindow.webContents.send('openPath', openPath)
+    openPath = null
+  }
+}
+
+async function installExtensions() {
+  try {
+    const { installExtension, REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } =
+      await import('electron-devtools-installer')
+    await installExtension([REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS], {
+      forceDownload: !!process.env.UPGRADE_EXTENSIONS,
+    })
+  } catch (err) {
+    console.log(err)
+  }
 }
 
 async function createMainWindow() {
@@ -33,8 +43,13 @@ async function createMainWindow() {
 
   const w = new BrowserWindow({
     webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      // the preload script uses Node.js modules (fs, child_process, mjml...)
+      sandbox: false,
+      // the preview loads local images (file://) from the project folder
       webSecurity: false,
-      nodeIntegration: true,
     },
     backgroundColor: '#2A2A35',
     show: false,
@@ -42,42 +57,30 @@ async function createMainWindow() {
   })
 
   w.once('ready-to-show', () => {
-    // if we double clicked on mjml file (or launched app with argument)
-    // we send path to renderer, to directly open/create project
-    if (openPath) {
-      mainWindow.webContents.send('openPath', openPath)
-    }
+    isRendererReady = true
+    sendOpenPath()
     w.show()
   })
+
+  // the files list refreshes when the window gets the focus again
+  w.on('focus', () => w.webContents.send('browser-window-focus'))
 
   if (isDevelopment) {
     w.webContents.openDevTools()
 
-    w.webContents.on('context-menu', (e, props) => {
-      const { x, y } = props
-
+    w.webContents.on('context-menu', (e, { x, y }) => {
       Menu.buildFromTemplate([
         {
           label: 'Inspect element',
           click() {
-            w.inspectElement(x, y)
+            w.webContents.inspectElement(x, y)
           },
         },
-      ]).popup(mainWindow)
+      ]).popup({ window: w })
     })
   }
 
-  const url = isDevelopment
-    ? `http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`
-    : formatUrl({
-        pathname: path.join(__dirname, 'index.html'),
-        protocol: 'file',
-        slashes: true,
-      })
-
-  const template = buildMenu(w)
-
-  menu = Menu.buildFromTemplate(template)
+  const menu = Menu.buildFromTemplate(buildMenu(w))
 
   if (process.platform === 'darwin') {
     Menu.setApplicationMenu(menu)
@@ -85,8 +88,16 @@ async function createMainWindow() {
     w.setMenu(menu)
   }
 
-  w.loadURL(url)
-  w.on('closed', () => (mainWindow = null))
+  if (isDevelopment && process.env.ELECTRON_RENDERER_URL) {
+    w.loadURL(process.env.ELECTRON_RENDERER_URL)
+  } else {
+    w.loadFile(join(__dirname, '../renderer/index.html'))
+  }
+
+  w.on('closed', () => {
+    mainWindow = null
+    isRendererReady = false
+  })
 
   return w
 }
@@ -103,7 +114,7 @@ app.on('before-quit', async event => {
   }
 })
 
-app.on('window-all-closed', async () => {
+app.on('window-all-closed', () => {
   app.quit()
 })
 
@@ -113,12 +124,20 @@ app.on('activate', async () => {
   }
 })
 
-app.on('ready', async () => {
+// macOS sends this event when the user opens a .mjml file with the app
+app.on('open-file', (event, filePath) => {
+  event.preventDefault()
+  openPath = filePath
+  sendOpenPath()
+})
+
+app.whenReady().then(async () => {
+  registerIpcHandlers()
   if (isDevelopment) {
     await installExtensions()
   }
   mainWindow = await createMainWindow()
-  if (isProduction) {
+  if (!isDevelopment) {
     autoUpdater.checkForUpdatesAndNotify()
   }
 })

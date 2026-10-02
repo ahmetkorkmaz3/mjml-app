@@ -1,5 +1,4 @@
 import { combineReducers } from 'redux'
-import { routerReducer as routing } from 'react-router-redux'
 
 import settings from './settings'
 import preview from './preview'
@@ -14,7 +13,6 @@ import search from './search'
 import snippets from './snippets'
 
 const rootReducer = combineReducers({
-  routing,
   settings,
   preview,
   modals,

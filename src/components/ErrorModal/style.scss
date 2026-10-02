@@ -1,16 +1,16 @@
-@import '../../styles/vars.scss';
+@use '../../styles/vars.scss';
 
 .ErrorModal {
   z-index: 999999999; // :p
 
   pre {
     -webkit-user-select: text;
-    border: 2px solid rgba($red, 0.5);
+    border: 2px solid rgba(vars.$red, 0.5);
     padding: 10px;
     font-family: monospace;
     max-height: 350px;
     overflow: auto;
-    color: $red;
+    color: vars.$red;
   }
 }
 
