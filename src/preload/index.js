@@ -33,6 +33,7 @@ const api = {
     basename: (p, ext) => path.basename(p, ext),
     dirname: p => path.dirname(p),
     extname: p => path.extname(p),
+    relative: (from, to) => path.relative(from, to),
   },
 
   fs: { ...fs },
