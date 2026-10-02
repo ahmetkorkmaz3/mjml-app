@@ -4,11 +4,23 @@ import uniq from 'lodash/uniq'
 
 const state = null
 
+// the new path of p when the folder oldPath moves to newPath (subfolders included)
+function movePath(p, oldPath, newPath) {
+  if (p === oldPath) {
+    return newPath
+  }
+  if (typeof p === 'string' && (p.startsWith(`${oldPath}/`) || p.startsWith(`${oldPath}\\`))) {
+    return newPath + p.slice(oldPath.length)
+  }
+  return p
+}
+
 export default handleActions(
   {
     SETTINGS_LOAD_SUCCESS: (state, { payload }) => {
       return Map({
         lastOpenedFolder: payload.lastOpenedFolder,
+        lastExportedFolder: payload.lastExportedFolder,
         projects: List(payload.projects),
         editor: Map(payload.editor),
         api: Map(payload.api),
@@ -55,15 +67,23 @@ export default handleActions(
     PROJECT_REMOVE: (state, { payload: path }) =>
       state.update('projects', projects => projects.filter(p => p !== path)),
 
+    // the templating settings of the project follow it to the new path
     PROJECT_RENAME: (state, { payload: { oldPath, newPath } }) =>
-      state.update('projects', projects =>
-        projects.map(p => {
-          if (p !== oldPath) {
-            return p
-          }
-          return newPath
-        }),
-      ),
+      state
+        .update('projects', projects =>
+          projects.map(p => {
+            if (p !== oldPath) {
+              return p
+            }
+            return newPath
+          }),
+        )
+        .update('templating', (templating = []) =>
+          templating.map(t => {
+            const projectPath = movePath(t.projectPath, oldPath, newPath)
+            return projectPath === t.projectPath ? t : { ...t, projectPath }
+          }),
+        ),
 
     PROJECTS_REMOVE: (state, { payload: paths }) =>
       state.update('projects', projects => projects.filter(p => paths.indexOf(p) === -1)),

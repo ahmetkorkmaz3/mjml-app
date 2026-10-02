@@ -2,10 +2,28 @@ import defaultsDeep from 'lodash/defaultsDeep'
 import omit from 'lodash/omit'
 
 import api from 'helpers/api'
-import { setError } from 'reducers/error'
+import { addAlert } from 'reducers/alerts'
 
 const storageGet = key => api.storage.get(key)
 const storageSet = (key, value) => api.storage.set(key, value)
+
+// electron-json-storage puts the content that it cannot parse in the error message
+function getBadData(err) {
+  const message = String((err && err.message) || err)
+  const index = message.indexOf('Invalid data: ')
+  return index === -1 ? message : message.slice(index + 'Invalid data: '.length)
+}
+
+// keeps a copy of the settings that could not load, so the defaults do not delete them
+async function backUpBadSettings(err) {
+  const key = `settings-backup-${Date.now()}`
+  try {
+    await storageSet(key, { error: String((err && err.message) || err), data: getBadData(err) })
+    return key
+  } catch (e) {
+    return null
+  }
+}
 
 export function loadSettings() {
   return async dispatch => {
@@ -13,6 +31,9 @@ export function loadSettings() {
     let res
     try {
       res = await storageGet('settings')
+      if (!res || typeof res !== 'object' || Array.isArray(res)) {
+        throw new Error(`Invalid data: ${JSON.stringify(res)}`)
+      }
 
       // check for old format and reformat
       if (typeof res.projects === 'object' && !Array.isArray(res.projects)) {
@@ -20,12 +41,24 @@ export function loadSettings() {
         await storageSet('settings', res)
       }
     } catch (e) {
-      shouldResetDefaults = true
-      dispatch(setError(e))
+      res = undefined
+      console.error(e)
+      const backupKey = await backUpBadSettings(e)
+      // without a backup, the app does not write the defaults over the bad file at once
+      shouldResetDefaults = !!backupKey
+      dispatch(
+        addAlert(
+          backupKey
+            ? `Could not load the settings, so the app uses the defaults. A copy of the old settings is in ${backupKey}.json in the storage folder of the app.`
+            : 'Could not load the settings, so the app uses the defaults.',
+          'error',
+        ),
+      )
     }
 
     const settings = defaultsDeep(res, {
       lastOpenedFolder: null,
+      lastExportedFolder: null,
       editor: {
         wrapLines: true,
         autoFold: false,

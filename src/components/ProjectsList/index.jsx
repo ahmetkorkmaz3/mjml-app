@@ -123,6 +123,8 @@ export default connect(
       this.safeSetState({
         activePath: null,
         isDeleteModalOpened: false,
+        // the next removal starts with the folder kept
+        shouldDeleteFolder: false,
       })
 
     handleChangeShouldDelete = shouldDeleteFolder => this.setState({ shouldDeleteFolder })
@@ -133,6 +135,7 @@ export default connect(
         isRenameModalOpened: false,
       })
 
+    // renameProject shows an alert when the rename fails
     handleRename = newPath => {
       this.props.renameProject(this.state.activePath, newPath)
       this.props.unselectAllProjects()

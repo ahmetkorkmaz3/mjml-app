@@ -10,6 +10,7 @@ import {
 
 import fetchGallery from 'helpers/fetchGallery'
 
+import Button from 'components/Button'
 import Tabbable from 'components/Tabbable'
 
 class TemplateChooser extends Component {
@@ -18,34 +19,40 @@ class TemplateChooser extends Component {
     source: 'basic',
 
     isFetching: false,
-    isError: false,
+    // the message of the last error, or null
+    error: null,
     gallery: [],
+  }
+
+  componentWillUnmount() {
+    this._unmounted = true
   }
 
   handleChangeSource = async source => {
     this.setState({ source })
     if (source === 'gallery') {
-      if (this.state.isFetching) {
-        return
-      }
-      this.setState({ isFetching: true })
-
-      try {
-        const gallery = await fetchGallery()
-        this.setState({
-          isFetching: false,
-          isError: false,
-          gallery,
-        })
-        this.handleSelectGalleryTemplate(0)
-      } catch (err) {
-        this.setState({
-          isFetching: false,
-          isError: true,
-        })
-      }
+      this.loadGallery()
     } else {
       this.props.onSelect('singleBasic')
+    }
+  }
+
+  loadGallery = async () => {
+    if (this.state.isFetching) {
+      return
+    }
+    this.setState({ isFetching: true, error: null })
+
+    try {
+      const gallery = await fetchGallery()
+      if (this._unmounted) return
+      this.setState({ isFetching: false, gallery })
+      if (this.state.source === 'gallery') {
+        this.handleSelectGalleryTemplate(0)
+      }
+    } catch (err) {
+      if (this._unmounted) return
+      this.setState({ isFetching: false, error: err.message || 'Could not load the gallery.' })
     }
   }
 
@@ -56,7 +63,7 @@ class TemplateChooser extends Component {
   render() {
     const { template, onSelect } = this.props
 
-    const { source, isFetching, isError, gallery } = this.state
+    const { source, isFetching, error, gallery } = this.state
 
     return (
       <div className="flow-v-20">
@@ -105,8 +112,13 @@ class TemplateChooser extends Component {
                   <IconChecking className="rotating mb-20" size={30} />
                   {'Fetching templates...'}
                 </div>
-              ) : isError ? (
-                <div>{'Error'}</div>
+              ) : error ? (
+                <div className="z flow-v-10" style={{ height: 250 }}>
+                  <div>{`Could not load the gallery. ${error}`}</div>
+                  <Button variant="secondary" onClick={this.loadGallery}>
+                    {'Retry'}
+                  </Button>
+                </div>
               ) : (
                 <div className="r" style={{ height: 450 }}>
                   <div className="sticky o-y-a Gallery">
