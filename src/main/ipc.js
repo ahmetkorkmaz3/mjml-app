@@ -38,7 +38,7 @@ function openExternal(url) {
   }
 }
 
-export function registerIpcHandlers({ onThemeChange, onMenuContext }) {
+export function registerIpcHandlers({ onThemeChange, onMenuContext, onAppMenu }) {
   ipcMain.handle('storage:get', (e, key) => storageGet(key))
   ipcMain.handle('storage:set', (e, key, value) => storageSet(key, value))
 
@@ -68,6 +68,7 @@ export function registerIpcHandlers({ onThemeChange, onMenuContext }) {
   })
 
   ipcMain.handle('menu:setContext', (e, context) => onMenuContext(context))
+  ipcMain.handle('menu:popupApp', e => onAppMenu(BrowserWindow.fromWebContents(e.sender)))
 
   // shows a native context menu, resolves with the id of the chosen item or null
   ipcMain.handle(

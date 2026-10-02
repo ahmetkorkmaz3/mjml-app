@@ -27,8 +27,15 @@ export default handleActions(
       if (index === -1) {
         return state
       }
-      // the index file changed now
-      return state.update(index, p => p.set('html', html).set('mtime', Date.now()))
+      return state.update(index, p => p.set('html', html))
+    },
+    // the index file of the project was written
+    PROJECT_SET_MTIME: (state, { payload: { path, mtime } }) => {
+      if (!state) {
+        return state
+      }
+      const index = state.findIndex(p => p.get('path') === path)
+      return index === -1 ? state : state.setIn([index, 'mtime'], mtime)
     },
     PROJECT_TOUCH: (state, { payload: path }) => {
       if (!state) {

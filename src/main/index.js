@@ -15,6 +15,7 @@ const isDevelopment = !app.isPackaged
 fixPath()
 
 let mainWindow = null
+let currentMenu = null
 let menuContext = { page: 'home', hasMjmlFile: false, hasPreview: false, preventAutoSave: false }
 let isRendererReady = false
 
@@ -70,6 +71,7 @@ function rebuildMenu() {
     },
   })
   const menu = Menu.buildFromTemplate(template)
+  currentMenu = menu
   if (process.platform === 'darwin') {
     Menu.setApplicationMenu(menu)
   } else {
@@ -158,7 +160,8 @@ async function createMainWindow() {
   }
 
   if (!isMac) {
-    // the hidden title bar hides the menu bar, the Alt key shows it
+    // the hidden title bar hides the menu bar, the menu button of the title
+    // bar shows the menu (menu:popupApp)
     w.setAutoHideMenuBar(true)
   }
 
@@ -224,6 +227,11 @@ app.whenReady().then(async () => {
     onThemeChange: () => {
       updateWindowTheme()
       rebuildMenu()
+    },
+    onAppMenu: win => {
+      if (currentMenu) {
+        currentMenu.popup({ window: win, x: 8, y: 40 })
+      }
     },
     onMenuContext: context => {
       menuContext = { ...menuContext, ...context }

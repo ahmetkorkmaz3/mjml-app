@@ -61,7 +61,8 @@ describe('buildMenuTemplate', () => {
     expect(findItem(build(home), 'close-project').accelerator).toBeUndefined()
     expect(findItem(build(home), 'close-window').role).toBe('close')
     expect(findItem(build(home), 'close-window').accelerator).toBe('CmdOrCtrl+W')
-    expect(findItem(build(project), 'close-window').accelerator).toBeUndefined()
+    // a role item without an accelerator gets Cmd/Ctrl+W from Electron, so it must have another one
+    expect(findItem(build(project), 'close-window').accelerator).toBe('CmdOrCtrl+Shift+W')
   })
 
   it('sends the command of a custom item', () => {

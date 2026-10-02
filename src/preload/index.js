@@ -68,6 +68,8 @@ const api = {
   menu: {
     setContext: context => ipcRenderer.invoke('menu:setContext', context),
     popup: items => ipcRenderer.invoke('menu:popup', items),
+    // Windows and Linux: the application menu, the window has no menu bar
+    popupApp: () => ipcRenderer.invoke('menu:popupApp'),
   },
 
   storage: {

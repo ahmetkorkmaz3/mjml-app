@@ -59,7 +59,8 @@ export function buildMenuTemplate({ platform, context, theme, send, actions }) {
       {
         id: 'close-window',
         role: 'close',
-        accelerator: isProject ? undefined : 'CmdOrCtrl+W',
+        // Electron gives the close role Cmd/Ctrl+W when the accelerator is empty
+        accelerator: isProject ? 'CmdOrCtrl+Shift+W' : 'CmdOrCtrl+W',
       },
       ...(isMac ? [] : [{ type: 'separator' }, settings, { type: 'separator' }, { role: 'quit' }]),
     ],
