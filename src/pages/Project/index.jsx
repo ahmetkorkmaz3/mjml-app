@@ -11,6 +11,7 @@ import {
   MdAutorenew as IconBeautify,
   MdSave as IconSave,
   MdBuild as IconBuild,
+  MdAutoAwesome as IconRefine,
 } from 'react-icons/md'
 
 import { useSearchParams } from 'react-router'
@@ -33,6 +34,7 @@ import BackButton from './BackButton'
 import SendModal from './SendModal'
 import AddFileModal from './AddFileModal'
 import FigmaImportModal from './FigmaImportModal'
+import RefineModal from './RefineModal'
 import RemoveFileModal from './RemoveFileModal'
 import PreviewSettings from './PreviewSettings'
 
@@ -170,6 +172,8 @@ const ConnectedProjectPage = connect(
 
     openFigmaImportModal = () => this.props.openModal('figmaImport')
 
+    openRefineModal = () => this.props.openModal('refine')
+
     handleFigmaImported = ({ filePath, warnings, usage }) => {
       const { addAlert } = this.props
       this._filelist.refresh()
@@ -244,6 +248,10 @@ const ConnectedProjectPage = connect(
                   <IconBeautify style={{ marginRight: 5 }} />
                   {'Beautify'}
                 </Button>,
+                <Button key="refine" transparent onClick={this.openRefineModal}>
+                  <IconRefine style={{ marginRight: 5 }} />
+                  {'Refine with AI'}
+                </Button>,
               ]}
               <Button transparent onClick={this.handleOpenSettings}>
                 <IconBuild style={{ marginRight: 5 }} />
@@ -316,6 +324,10 @@ const ConnectedProjectPage = connect(
           <SendModal currentProjectPath={path} />
           <AddFileModal rootPath={path} onAdd={this.handleAddFile} />
           <FigmaImportModal rootPath={path} onImported={this.handleFigmaImported} />
+          <RefineModal
+            filePath={isMJMLFile ? pathModule.join(path, activeFile.name) : null}
+            getEditor={() => this._editor}
+          />
           <RemoveFileModal rootPath={path} onRemove={this.handleRemoveFile} />
           <PreviewSettings
             currentProjectPath={path}
