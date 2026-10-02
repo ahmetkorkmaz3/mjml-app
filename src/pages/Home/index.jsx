@@ -1,11 +1,9 @@
 import { Component } from 'react'
-import cx from 'classnames'
-
-import { FaCog } from 'react-icons/fa'
-import { MdCreateNewFolder as IconCreate, MdFileDownload as IconOpen } from 'react-icons/md'
-
 import { connect } from 'react-redux'
+import { MdAdd as IconAdd, MdSettings as IconSettings } from 'react-icons/md'
 
+import api from 'helpers/api'
+import { formatShortcut } from 'helpers/shortcut'
 import { addProject } from 'actions/projects'
 import { openModal } from 'reducers/modals'
 
@@ -16,7 +14,11 @@ import GlobalSearch from 'components/GlobalSearch'
 import TitleBar from 'components/TitleBar'
 import PageCommands from 'components/PageCommands'
 
+import EmptyState from './EmptyState'
+
 import './style.scss'
+
+const shortcut = accelerator => formatShortcut(accelerator, api.platform)
 
 const HOME_CONTEXT = { page: 'home', hasMjmlFile: false, hasPreview: false, preventAutoSave: false }
 
@@ -49,38 +51,48 @@ export default connect(
       const hasProjects = !!projects.size
 
       return (
-        <div className="fg-1 d-f fd-c">
+        <div className="HomePage">
           <PageCommands commands={HOME_COMMANDS} context={HOME_CONTEXT} />
           <TitleBar
-            left={hasProjects && <GlobalSearch className="fg-1" />}
+            left={<span className="HomePage--app-name">{'MJML'}</span>}
+            center={hasProjects && <GlobalSearch />}
             right={
               <>
                 <Button
-                  ref={n => (this._newProjectBTN = n)}
-                  primary
-                  onClick={() => openModal('newProject')}
+                  variant="ghost"
+                  onClick={() => addProject()}
+                  data-tooltip={`Open project (${shortcut('CmdOrCtrl+O')})`}
                 >
-                  <IconCreate size={20} className="mr-5" />
-                  {'New project'}
+                  {'Open…'}
                 </Button>
-                <Button ghost onClick={() => addProject()}>
-                  <IconOpen size={20} className="mr-5" />
-                  {'Open project'}
+                <Button variant="primary" onClick={() => openModal('newProject')}>
+                  <IconAdd size={16} />
+                  {'New Project'}
                 </Button>
-                <Button ghost onClick={() => openModal('settings')}>
-                  <FaCog />
+                <Button
+                  variant="ghost"
+                  icon
+                  aria-label="Settings"
+                  data-tooltip={`Settings (${shortcut('CmdOrCtrl+,')})`}
+                  onClick={() => openModal('settings')}
+                >
+                  <IconSettings size={16} />
                 </Button>
               </>
             }
           />
 
-          {hasProjects && (
-            <div className={cx('fg-1 d-f fd-c p-10 anim-enter-fade')}>
+          {hasProjects ? (
+            <div className="HomePage--content anim-enter-fade">
               <MassActions />
-              <div className="fg-1 r mt-20">
-                <ProjectsList />
-              </div>
+              <ProjectsList />
             </div>
+          ) : (
+            <EmptyState
+              newButtonRef={n => (this._newProjectBTN = n)}
+              onNew={() => openModal('newProject')}
+              onOpen={() => addProject()}
+            />
           )}
         </div>
       )
