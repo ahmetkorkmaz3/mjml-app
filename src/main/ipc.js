@@ -6,6 +6,7 @@ import {
   clipboard,
   dialog,
   ipcMain,
+  Menu,
   nativeTheme,
   safeStorage,
   shell,
@@ -17,6 +18,7 @@ import { createFigmaImporter } from './figma-import'
 import { cleanUpScreenshot, renderScreenshot, takeScreenshot } from './screenshot'
 import { createSecretStore, SECRET_NAMES } from './secrets'
 import { compile } from './templating'
+import { toPopupTemplate } from './popup-menu'
 import { normalizeThemeSetting } from './theme'
 
 const storageGet = promisify(storage.get)
@@ -66,6 +68,20 @@ export function registerIpcHandlers({ onThemeChange, onMenuContext }) {
   })
 
   ipcMain.handle('menu:setContext', (e, context) => onMenuContext(context))
+
+  // shows a native context menu, resolves with the id of the chosen item or null
+  ipcMain.handle(
+    'menu:popup',
+    (e, items) =>
+      new Promise(resolve => {
+        const menu = Menu.buildFromTemplate(toPopupTemplate(items, resolve))
+        menu.popup({
+          window: BrowserWindow.fromWebContents(e.sender),
+          // the click can come after the close event, so wait a little
+          callback: () => setTimeout(() => resolve(null), 100),
+        })
+      }),
+  )
 
   ipcMain.handle('templating:compile', (e, params) => compile(params))
 
