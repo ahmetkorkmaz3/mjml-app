@@ -4,7 +4,7 @@ const state = []
 
 export default handleActions(
   {
-    ALERT_ADD: (state, { payload: alert }) => [alert, ...state].slice(0, 5),
+    ALERT_ADD: (state, { payload: alert }) => [alert, ...state].slice(0, 3),
     ALERT_REMOVE: (state, { payload: id }) => state.filter(a => a.id !== id),
   },
   state,
@@ -16,7 +16,7 @@ export function addAlert(message, type = 'info', { autoHide = true } = {}) {
   return dispatch => {
     const alert = { id: __ID__++, message, type }
     dispatch({ type: 'ALERT_ADD', payload: alert })
-    if (autoHide) setTimeout(() => dispatch(removeAlert(alert.id)), 2e3)
+    if (autoHide) setTimeout(() => dispatch(removeAlert(alert.id)), 4e3)
   }
 }
 
