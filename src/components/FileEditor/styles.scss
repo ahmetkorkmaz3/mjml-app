@@ -1,8 +1,7 @@
-@use '../../styles/vars' as *;
-
 .FileEditor {
   flex-grow: 1;
   position: relative;
+  background: var(--bg-panel);
 
   .FileEditor--editor {
     position: absolute;
@@ -14,43 +13,15 @@
 
   .cm-editor {
     height: 100%;
-    font-size: 14px;
 
     &.cm-focused {
       outline: none;
     }
   }
-
-  @each $size in 12, 14, 15, 16, 18 {
-    &.fontSize-#{$size} .cm-content {
-      font-size: #{$size}px;
-    }
-  }
 }
 
 .FileEditor--loader {
-  background: $bg;
   z-index: 1;
-}
-
-.FileEditor .cm-tooltip-autocomplete {
-  border: none;
-  background: $bg;
-
-  > ul > li {
-    color: $almostWhite;
-    padding: 5px;
-  }
-
-  > ul > li[aria-selected] {
-    background-color: rgba($blue, 0.1);
-    color: $blue;
-  }
-}
-
-.FileEditor .cm-tooltip-lint {
-  background: $bg-light;
-  border: none;
-  box-shadow: rgba(black, 0.2) 0 3px 18px;
-  color: white;
+  background: var(--bg-panel);
+  color: var(--fg-subtle);
 }

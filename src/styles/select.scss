@@ -1,20 +1,19 @@
-@use './vars' as *;
-
 // react-select renders with `unstyled` and `classNamePrefix="Select"`,
 // so these rules give the complete look of the component.
 .SelectDark {
-  font-size: 14px;
+  font-size: var(--text-md);
 
   .Select__control {
-    background-color: rgba(black, 0.1);
-    border: 2px solid rgba(white, 0.1);
-    border-radius: 0;
-    padding: 2px 6px;
-    min-height: 42px;
+    min-height: var(--control-height);
+    padding: 1px var(--space-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-input);
     cursor: text;
 
     &--is-focused {
-      border-color: rgba($blue, 0.6);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
   }
 
@@ -24,82 +23,77 @@
   }
 
   .Select__placeholder {
-    color: rgba(white, 0.2);
+    color: var(--fg-subtle);
   }
 
   .Select__input-container {
-    color: $evenLighterGrey;
+    color: var(--fg);
   }
 
   .Select__multi-value {
-    color: $evenLighterGrey;
-    background-color: rgba(white, 0.05);
-    border: 1px solid rgba(white, 0.1);
     align-items: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-hover);
+    color: var(--fg);
   }
 
   .Select__multi-value__label {
-    padding: 2px 6px;
+    padding: 1px 6px;
   }
 
   .Select__multi-value__remove {
-    padding: 2px 4px;
-    border-left: 1px solid rgba(white, 0.1);
-    cursor: pointer;
+    padding: 1px 4px;
+    border-left: 1px solid var(--border);
+    color: var(--fg-muted);
 
     &:hover {
-      color: $blue;
-      background-color: rgba($blue, 0.1);
+      color: var(--danger);
+      background-color: var(--danger-bg);
     }
   }
 
   .Select__indicators {
-    color: rgba(white, 0.5);
     gap: 6px;
+    color: var(--fg-subtle);
   }
 
-  .Select__indicator {
-    cursor: pointer;
-
-    &:hover {
-      color: rgba(white, 0.7);
-    }
+  .Select__indicator:hover {
+    color: var(--fg);
   }
 
   .Select__clear-indicator:hover {
-    color: $red;
+    color: var(--danger);
   }
 
   .Select__indicator-separator {
     width: 1px;
     align-self: stretch;
-    background: rgba(white, 0.1);
+    background: var(--border);
   }
 
   .Select__menu {
+    z-index: 10;
     margin-top: 4px;
-    background: $bg-light;
-    border: 2px solid rgba(white, 0.1);
-    border-top: 1px solid $blue;
-    box-shadow: rgba(black, 0.1) 0 3px 10px;
+    padding: var(--space-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+    box-shadow: var(--shadow-popover);
   }
 
   .Select__option {
-    font-size: 13px;
-    padding: 8px 10px;
-    background: $bg;
-    color: $evenLighterGrey;
-    cursor: default;
+    padding: 6px var(--space-2);
+    border-radius: var(--radius-md);
+    color: var(--fg);
 
     &--is-focused {
-      background: #2f2f3a;
-      color: white;
+      background: var(--bg-selected);
     }
   }
 
   .Select__menu-notice {
-    font-size: 13px;
-    padding: 8px 10px;
-    color: rgba(white, 0.4);
+    padding: 6px var(--space-2);
+    color: var(--fg-subtle);
   }
 }

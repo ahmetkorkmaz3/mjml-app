@@ -4,10 +4,10 @@ import Button from 'components/Button'
 
 export default function OldSyntaxDetected({ onMigrate }) {
   return (
-    <div className="OldSyntaxDetected d-f ai-c flow-h-10">
+    <div className="OldSyntaxDetected">
       <IconWarning />
-      <span>{'MJML 3 syntax detected'}</span>
-      <Button warn onClick={onMigrate} className="ml-auto">
+      <span>{'This file uses the MJML 3 syntax.'}</span>
+      <Button size="sm" variant="secondary" onClick={onMigrate} className="ml-auto">
         {'Migrate'}
       </Button>
     </div>

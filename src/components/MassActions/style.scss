@@ -1,11 +1,22 @@
-@use '../../styles/vars.scss';
+.HomeHeader {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 44px;
+  padding: 0 var(--space-6);
+}
 
-.MassActions {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: vars.$bg-darker;
-  border-top: 2px solid vars.$bg-light;
-  z-index: 1;
+.HomeHeader--title {
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.HomeHeader--count {
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--bg-hover);
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
 }

@@ -1,11 +1,13 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, nativeTheme, screen, shell } from 'electron'
 import { join } from 'node:path'
 import { autoUpdater } from 'electron-updater'
 import fixPath from 'fix-path'
 
-import { saveWindowSettings, getWindowSettings } from './window-settings'
+import { saveWindowSettings, getWindowSettings, getStoredSettings } from './window-settings'
 import { registerIpcHandlers } from './ipc'
-import buildMenu from './menu'
+import { buildMenuTemplate } from './menu'
+import { normalizeThemeSetting, windowColors } from './theme'
+import { fitBounds } from './window-bounds'
 
 const isDevelopment = !app.isPackaged
 
@@ -13,6 +15,8 @@ const isDevelopment = !app.isPackaged
 fixPath()
 
 let mainWindow = null
+let currentMenu = null
+let menuContext = { page: 'home', hasMjmlFile: false, hasPreview: false, preventAutoSave: false }
 let isRendererReady = false
 
 // if we double clicked on mjml file (or launched app with argument)
@@ -23,6 +27,55 @@ function sendOpenPath() {
   if (mainWindow && isRendererReady && openPath) {
     mainWindow.webContents.send('openPath', openPath)
     openPath = null
+  }
+}
+
+// the first frame must use the stored theme, so read it before the window exists
+async function applyStoredTheme() {
+  const settings = await getStoredSettings()
+  nativeTheme.themeSource = normalizeThemeSetting(settings.appearance?.theme)
+}
+
+function updateWindowTheme() {
+  if (!mainWindow) {
+    return
+  }
+  const colors = windowColors(nativeTheme.shouldUseDarkColors)
+  if (process.platform === 'darwin') {
+    // the window stays transparent for the vibrancy
+    return
+  }
+  mainWindow.setBackgroundColor(colors.background)
+  try {
+    mainWindow.setTitleBarOverlay({ color: colors.background, symbolColor: colors.symbol })
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+function rebuildMenu() {
+  if (!mainWindow) {
+    return
+  }
+  const w = mainWindow
+  const template = buildMenuTemplate({
+    platform: process.platform,
+    context: menuContext,
+    theme: nativeTheme.themeSource,
+    send: command => w.webContents.send('redux-command', command),
+    actions: {
+      openExternal: url => shell.openExternal(url),
+      reload: () => w.webContents.reload(),
+      toggleDevTools: () => w.webContents.toggleDevTools(),
+      toggleFullScreen: () => w.setFullScreen(!w.isFullScreen()),
+    },
+  })
+  const menu = Menu.buildFromTemplate(template)
+  currentMenu = menu
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(menu)
+  } else {
+    w.setMenu(menu)
   }
 }
 
@@ -39,9 +92,27 @@ async function installExtensions() {
 }
 
 async function createMainWindow() {
-  const windowParams = await getWindowSettings()
+  const saved = await getWindowSettings()
+  const bounds = fitBounds(saved, screen.getAllDisplays(), { width: 1280, height: 800 })
+  const isMac = process.platform === 'darwin'
+  const isDark = nativeTheme.shouldUseDarkColors
+  const colors = windowColors(isDark)
 
   const w = new BrowserWindow({
+    ...bounds,
+    minWidth: 960,
+    minHeight: 600,
+    ...(isMac
+      ? {
+          titleBarStyle: 'hiddenInset',
+          trafficLightPosition: { x: 16, y: 14 },
+          vibrancy: 'sidebar',
+          visualEffectState: 'followWindow',
+        }
+      : {
+          titleBarStyle: 'hidden',
+          titleBarOverlay: { height: 44, color: colors.background, symbolColor: colors.symbol },
+        }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -50,11 +121,19 @@ async function createMainWindow() {
       sandbox: false,
       // the preview loads local images (file://) from the project folder
       webSecurity: false,
+      additionalArguments: [`--mjml-theme=${isDark ? 'dark' : 'light'}`],
     },
-    backgroundColor: '#2A2A35',
+    backgroundColor: isMac ? '#00000000' : colors.background,
     show: false,
-    ...windowParams,
   })
+
+  if (saved && saved.isMaximized) {
+    w.maximize()
+  }
+
+  const sendFullScreen = isFullScreen => w.webContents.send('window-fullscreen', isFullScreen)
+  w.on('enter-full-screen', () => sendFullScreen(true))
+  w.on('leave-full-screen', () => sendFullScreen(false))
 
   w.once('ready-to-show', () => {
     isRendererReady = true
@@ -80,13 +159,24 @@ async function createMainWindow() {
     })
   }
 
-  const menu = Menu.buildFromTemplate(buildMenu(w))
-
-  if (process.platform === 'darwin') {
-    Menu.setApplicationMenu(menu)
-  } else {
-    w.setMenu(menu)
+  if (!isMac) {
+    // the hidden title bar hides the menu bar, the menu button of the title
+    // bar shows the menu (menu:popupApp)
+    w.setAutoHideMenuBar(true)
   }
+
+  // save the size and the position before the window closes (Cmd+W on the home page)
+  let isClosing = false
+  w.on('close', event => {
+    if (isClosing) {
+      return
+    }
+    event.preventDefault()
+    isClosing = true
+    saveWindowSettings(w)
+      .catch(err => console.log(err))
+      .finally(() => w.close())
+  })
 
   if (isDevelopment && process.env.ELECTRON_RENDERER_URL) {
     w.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -121,6 +211,7 @@ app.on('window-all-closed', () => {
 app.on('activate', async () => {
   if (mainWindow === null) {
     mainWindow = await createMainWindow()
+    rebuildMenu()
   }
 })
 
@@ -132,11 +223,28 @@ app.on('open-file', (event, filePath) => {
 })
 
 app.whenReady().then(async () => {
-  registerIpcHandlers()
+  registerIpcHandlers({
+    onThemeChange: () => {
+      updateWindowTheme()
+      rebuildMenu()
+    },
+    onAppMenu: win => {
+      if (currentMenu) {
+        currentMenu.popup({ window: win, x: 8, y: 40 })
+      }
+    },
+    onMenuContext: context => {
+      menuContext = { ...menuContext, ...context }
+      rebuildMenu()
+    },
+  })
+  nativeTheme.on('updated', updateWindowTheme)
+  await applyStoredTheme()
   if (isDevelopment) {
     await installExtensions()
   }
   mainWindow = await createMainWindow()
+  rebuildMenu()
   if (!isDevelopment) {
     autoUpdater.checkForUpdatesAndNotify()
   }

@@ -7,7 +7,7 @@ const storageSet = promisify(storage.set)
 
 export const saveWindowSettings = async window => {
   if (!window) return
-  const bounds = window.getContentBounds()
+  const bounds = { ...window.getNormalBounds(), isMaximized: window.isMaximized() }
   const settings = await storageGet('settings')
 
   if (!settings) return
@@ -15,6 +15,15 @@ export const saveWindowSettings = async window => {
   set(settings, 'windowParams', bounds)
 
   return storageSet('settings', settings)
+}
+
+// the stored settings, or an empty object when they cannot be read
+export const getStoredSettings = async () => {
+  try {
+    return (await storageGet('settings')) || {}
+  } catch (e) {
+    return {}
+  }
 }
 
 export const getWindowSettings = async () => {

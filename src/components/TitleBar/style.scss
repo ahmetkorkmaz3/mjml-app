@@ -1,0 +1,72 @@
+.TitleBar {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  height: var(--titlebar-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--separator);
+  background: var(--bg-window);
+  -webkit-app-region: drag;
+
+  button,
+  a,
+  input,
+  select,
+  [role='button'],
+  .SegmentedControl,
+  .GlobalSearch {
+    -webkit-app-region: no-drag;
+  }
+}
+
+.TitleBar--darwin:not(.isFullScreen) {
+  padding-left: 84px;
+}
+
+.TitleBar--win32,
+.TitleBar--linux {
+  padding-right: 148px;
+}
+
+.TitleBar--menu {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  border-radius: var(--radius-md);
+  color: var(--fg-muted);
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--fg);
+  }
+}
+
+.TitleBar--left,
+.TitleBar--right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.TitleBar--left {
+  flex: 1 1 0;
+}
+
+.TitleBar--center {
+  display: flex;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.TitleBar--right {
+  flex: 1 1 0;
+  justify-content: flex-end;
+}

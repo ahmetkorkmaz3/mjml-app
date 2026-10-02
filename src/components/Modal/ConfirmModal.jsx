@@ -8,6 +8,7 @@ class ConfirmModal extends Component {
   static defaultProps = {
     yepCTA: 'Yes',
     nopCTA: 'No',
+    size: 'sm',
   }
 
   render() {
@@ -17,6 +18,7 @@ class ConfirmModal extends Component {
       onConfirm,
       onCancel,
       isConfirmDisabled,
+      danger,
       className,
       children,
       ...props
@@ -26,10 +28,14 @@ class ConfirmModal extends Component {
       <Modal {...props} className={cx('Modal-confirm', className)} onClose={onCancel}>
         {children}
         <div className="ModalFooter">
-          <Button primary onClick={onConfirm} disabled={isConfirmDisabled}>
+          <Button
+            variant={danger ? 'danger' : 'primary'}
+            onClick={onConfirm}
+            disabled={isConfirmDisabled}
+          >
             {yepCTA}
           </Button>
-          <Button transparent onClick={onCancel}>
+          <Button variant="secondary" onClick={onCancel}>
             {nopCTA}
           </Button>
         </div>

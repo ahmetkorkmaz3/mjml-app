@@ -1,98 +1,69 @@
-@use 'sass:color';
-@use '../../styles/vars.scss';
-
 .ProjectsList {
-  overflow: auto;
-  margin: -10px;
-  padding: 5px;
+  flex-grow: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 220px);
+  justify-content: start;
+  align-content: start;
+  gap: var(--space-5) var(--space-4);
+  padding: var(--space-1) var(--space-6) var(--space-8);
 }
 
-.ProjectItem {
-  position: relative;
-  text-align: left;
-  float: left; // i mean, wtf?
-  width: 270px;
-  margin-right: 20px;
-  margin-bottom: 30px;
-  &:hover {
-    .ProjectItem--action-btn {
-      opacity: 1;
+.ProjectCard {
+  min-width: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  outline: none;
+
+  &:hover .ProjectCard--thumb {
+    border-color: var(--border-strong);
+  }
+
+  &.isSelected {
+    background: var(--bg-selected);
+
+    .ProjectCard--thumb {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
     }
-    .ProjectItem--edit-btn {
-      display: block;
-    }
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--focus-ring);
   }
 }
 
-.ProjectItem--preview-container-wrapper {
-  padding: 5px;
-}
-
-.ProjectItem--preview-container {
-  display: block;
-  overflow: hidden;
+.ProjectCard--thumb {
   position: relative;
-  height: 280px;
-  background-color: rgba(black, 0.15);
+  height: 250px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-canvas);
 }
 
-.ProjectItem--label {
-  font-size: 13px;
-  margin: 5px 0;
-  cursor: default;
+.ProjectCard--name {
+  margin-top: var(--space-2);
+  font-weight: 500;
+  color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.ProjectItem--action-btn {
-  pointer-events: auto;
-  position: absolute;
-  top: -3px;
-  z-index: 40;
+.ProjectCard--meta {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  transition: 200ms ease-in-out;
-  transition-property: background, transform;
-  opacity: 0;
-  box-shadow: rgba(black, 0.2) 0 3px 8px;
-  &:active {
-    transform: scale(0.8);
-  }
+  min-width: 0;
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
 }
 
-.ProjectItem--delete-btn {
-  right: -3px;
-  background: #ca2d2d;
-  &:hover {
-    background: color.adjust(#ca2d2d, $lightness: 10%);
-  }
+.ProjectCard--time {
+  flex-shrink: 0;
+  margin-left: 4px;
 }
 
-.ProjectItem--select-btn {
-  left: -3px;
-  background: white;
-  &.isActive {
-    opacity: 1;
-    background: vars.$blue;
-    color: white;
-  }
-}
-
-.ProjectItem--edit-btn {
-  display: none;
-  &:hover {
-    color: white;
-  }
-}
-
-.ProjectItem--duplicate-btn {
-  top: auto;
-  right: -3px;
-  bottom: 10px;
-  background: vars.$blue;
+.ProjectsList--no-match {
+  grid-column: 1 / -1;
+  color: var(--fg-muted);
 }

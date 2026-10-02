@@ -128,7 +128,7 @@ function RefineModal({ isOpened, filePath, getEditor, ai, closeModal, openModal,
         <Button primary onClick={handleSubmit} disabled={!canSubmit}>
           {'Refine'}
         </Button>
-        <Button transparent onClick={progress ? () => api.figma.cancel() : handleClose}>
+        <Button variant="secondary" onClick={progress ? () => api.figma.cancel() : handleClose}>
           {progress ? 'Stop' : 'Cancel'}
         </Button>
       </div>

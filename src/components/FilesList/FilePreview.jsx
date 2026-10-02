@@ -4,7 +4,6 @@ import { connect } from 'react-redux'
 import isEqual from 'lodash/isEqual'
 import find from 'lodash/find'
 
-import Button from 'components/Button'
 import Iframe from 'components/Iframe'
 
 import { updateSettings } from 'actions/settings'
@@ -58,35 +57,16 @@ export default connect(
     }
 
     render() {
-      const { preview, disablePointer, previewSize, onSetSize, iframeBase } = this.props
+      const { preview, disablePointer, iframeBase, previewSize } = this.props
       const { content } = this.state
 
       return (
         <div className="FilesList--preview">
+          {!preview && (
+            <div className="FilesList--preview-empty">{'Select an MJML file to preview it'}</div>
+          )}
           {disablePointer && <div className="FilesList--preview-overlay abs" />}
           <div className={cx('FilesList--preview-content', { isVisible: !!preview })}>
-            <div className="FileList--preview-actions-wrapper">
-              <div className="FileList--preview-actions">
-                <Button
-                  ghost
-                  className={cx({
-                    isActive: previewSize.get('current') === previewSize.get('desktop'),
-                  })}
-                  onClick={() => onSetSize(previewSize.get('desktop'))}
-                >
-                  {'Desktop'}
-                </Button>
-                <Button
-                  ghost
-                  className={cx({
-                    isActive: previewSize.get('current') === previewSize.get('mobile'),
-                  })}
-                  onClick={() => onSetSize(previewSize.get('mobile'))}
-                >
-                  {'Mobile'}
-                </Button>
-              </div>
-            </div>
             {preview ? (
               preview.type === 'html' ? (
                 <Iframe base={iframeBase} value={content} openLinks />
@@ -94,6 +74,9 @@ export default connect(
                 <img className="FileList--preview-image" src={`file://${preview.content}`} />
               ) : null
             ) : null}
+            {preview && preview.type === 'html' && (
+              <div className="FilesList--preview-width">{`${previewSize.get('current')} px`}</div>
+            )}
           </div>
         </div>
       )

@@ -1,5 +1,3 @@
-@use 'vars.scss';
-
 .d-f {
   display: flex;
 }
@@ -68,6 +66,9 @@
 }
 .mb-50 {
   margin-bottom: 50px;
+}
+.mr-auto {
+  margin-right: auto !important;
 }
 .ml-auto {
   margin-left: auto !important;
@@ -199,22 +200,19 @@
 }
 
 .c-blue {
-  color: vars.$blue !important;
+  color: var(--accent) !important;
 }
 .c-yellow {
-  color: vars.$yellow !important;
+  color: var(--warning) !important;
 }
 .c-red {
-  color: vars.$red !important;
+  color: var(--danger) !important;
 }
 .c-white {
-  color: white !important;
+  color: var(--fg) !important;
 }
 .c-green {
-  color: #52a952 !important;
-}
-.c-white {
-  color: #fff !important;
+  color: var(--success) !important;
 }
 
 .fw-b {
@@ -222,18 +220,18 @@
 }
 
 .small {
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .bg-dark {
-  background-color: vars.$bg;
+  background-color: var(--bg-window);
 }
 .bg-darker {
-  background-color: vars.$bg-darker;
+  background-color: var(--bg-panel);
 }
 
 .t-small {
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .wb-ba {
@@ -272,7 +270,7 @@
 }
 
 .ff-m {
-  font-family: monospace;
+  font-family: var(--font-mono);
 }
 
 .ellipsis {
@@ -290,22 +288,16 @@
 .tooltip {
   display: none;
   position: absolute;
-  background: rgba(32, 32, 32, 0.9);
-  padding: 8px;
-  margin-top: 8px;
+  z-index: 100;
+  max-width: 320px;
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-popover);
+  color: var(--fg);
+  font-size: var(--text-sm);
   line-height: 1.5;
   pointer-events: none;
-  &.tooltip-up {
-    &::before {
-      content: '';
-      position: absolute;
-      top: -8px;
-      display: block;
-      width: 0;
-      height: 0;
-      border-left: 8px solid transparent;
-      border-right: 8px solid transparent;
-      border-bottom: 8px solid rgba(32, 32, 32, 0.9);
-    }
-  }
 }

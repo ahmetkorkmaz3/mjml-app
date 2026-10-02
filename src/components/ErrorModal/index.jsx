@@ -1,6 +1,5 @@
 import { Component } from 'react'
 import { connect } from 'react-redux'
-import { IoIosSad as IconErr } from 'react-icons/io'
 import { MdContentCopy as IconCopy, MdOpenInNew as IconOpen } from 'react-icons/md'
 
 import api from 'helpers/api'
@@ -51,33 +50,32 @@ export default connect(
       const stack = errorCopy ? errorCopy.stack : ''
 
       return (
-        <Modal isOpened={!!error} onClose={() => setError(null)} className="ErrorModal flow-v-20">
-          <div className="d-f ai-c jc-c">
-            <IconErr size={70} />
-            <div>
-              <b style={{ fontSize: 20 }}>{'Oops...'}</b>
-              <br />
-              {'Looks like something gone wrong.'}
-            </div>
-          </div>
-          <div className="r">
-            <Button ghost small className="ErrorModal--copy-btn" onClick={this.handleCopyStack}>
-              <IconCopy className="mr-5" />
-              {'Copy'}
-            </Button>
-            <pre>{stack}</pre>
-          </div>
-          <div className="d-f fd-c ai-c jc-c">
-            <div className="mb-10">
-              {'En error has been thrown in the application code. If you want, you can '}
-              {'report it to the source code repository, so we can help you.'}
-            </div>
+        <Modal
+          isOpened={!!error}
+          onClose={() => setError(null)}
+          title="Something went wrong"
+          className="ErrorModal flow-v-10"
+        >
+          <p className="ErrorModal--text">
+            {
+              'The application code threw an error. You can report it on GitHub with the details below.'
+            }
+          </p>
+          <pre>{stack}</pre>
+          <div className="ModalFooter">
             <Button
-              primary
+              variant="primary"
               onClick={() => api.shell.openExternal('https://github.com/mjmlio/mjml-app/issues')}
             >
-              <IconOpen className="mr-5" />
-              {'Open the issues page'}
+              <IconOpen />
+              {'Report the Issue'}
+            </Button>
+            <Button variant="secondary" onClick={this.handleCopyStack}>
+              <IconCopy />
+              {'Copy Details'}
+            </Button>
+            <Button variant="ghost" onClick={() => setError(null)} className="mr-auto">
+              {'Close'}
             </Button>
           </div>
         </Modal>
