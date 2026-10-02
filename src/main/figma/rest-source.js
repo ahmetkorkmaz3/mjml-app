@@ -84,6 +84,9 @@ export async function getDesignFromRest({
     throw new ImportError('FIGMA_ERROR', 'Figma could not render the node.')
   }
   const shot = await fetch(renders[nodeId], { signal })
+  if (!shot.ok) {
+    throw new ImportError('FIGMA_ERROR', 'Figma could not download the screenshot.')
+  }
   const screenshot = Buffer.from(await shot.arrayBuffer())
 
   let fills = {}
