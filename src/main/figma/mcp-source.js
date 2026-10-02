@@ -9,11 +9,16 @@ import { ImportError } from '../errors'
 const NAMED_ASSET_RE =
   /(?:const|let|var)\s+(\w+)\s*=\s*["'](https?:\/\/[^"']+\/assets\/[^"']+)["']/g
 const ASSET_URL_RE = /https?:\/\/(?:localhost|127\.0\.0\.1):\d+\/assets\/[^"'\s)`]+/g
-const LIMIT_RE = /limit|quota|rate/i
+const LIMIT_RE = /\brate[ -]?limit|\bquota\b|\blimit(s|ed)?\b/i
 
 export async function connectMcp(url) {
   const client = new Client({ name: 'mjml-app', version: '1.0.0' })
-  await client.connect(new StreamableHTTPClientTransport(new URL(url)))
+  try {
+    await client.connect(new StreamableHTTPClientTransport(new URL(url)))
+  } catch (err) {
+    await client.close().catch(() => {})
+    throw err
+  }
   return client
 }
 
