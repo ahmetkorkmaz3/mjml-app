@@ -113,7 +113,7 @@ class RenameModal extends Component {
                 {fullPath && (
                   <div className="mt-10 t-small">
                     {'Project will be renamed to: '}
-                    <b className="c-white wb-ba">{fullPath}</b>
+                    <b className="wb-ba">{fullPath}</b>
                   </div>
                 )}
                 {projectLocStatus === 'checking' && (

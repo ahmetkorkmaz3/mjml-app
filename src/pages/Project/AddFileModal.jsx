@@ -138,7 +138,7 @@ export default connect(
             <Button primary onClick={this.handleSubmit} disabled={!isValid}>
               {'Create file'}
             </Button>
-            <Button transparent onClick={this.handleClose}>
+            <Button variant="secondary" onClick={this.handleClose}>
               {'Cancel'}
             </Button>
           </div>

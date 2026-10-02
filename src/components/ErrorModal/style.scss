@@ -1,21 +1,21 @@
-@use '../../styles/vars.scss';
-
 .ErrorModal {
-  z-index: 999999999; // :p
+  z-index: 999999999;
 
   pre {
-    -webkit-user-select: text;
-    border: 2px solid rgba(vars.$red, 0.5);
-    padding: 10px;
-    font-family: monospace;
-    max-height: 350px;
+    max-height: 300px;
     overflow: auto;
-    color: vars.$red;
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-input);
+    color: var(--danger);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    user-select: text;
+    -webkit-user-select: text;
   }
 }
 
-.ErrorModal--copy-btn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
+.ErrorModal--text {
+  color: var(--fg-muted);
 }
