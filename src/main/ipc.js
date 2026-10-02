@@ -36,7 +36,7 @@ function openExternal(url) {
   }
 }
 
-export function registerIpcHandlers({ onThemeChange }) {
+export function registerIpcHandlers({ onThemeChange, onMenuContext }) {
   ipcMain.handle('storage:get', (e, key) => storageGet(key))
   ipcMain.handle('storage:set', (e, key, value) => storageSet(key, value))
 
@@ -64,6 +64,8 @@ export function registerIpcHandlers({ onThemeChange }) {
     nativeTheme.themeSource = normalizeThemeSetting(setting)
     onThemeChange(nativeTheme.themeSource)
   })
+
+  ipcMain.handle('menu:setContext', (e, context) => onMenuContext(context))
 
   ipcMain.handle('templating:compile', (e, params) => compile(params))
 

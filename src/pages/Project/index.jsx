@@ -30,6 +30,8 @@ import Button from 'components/Button'
 import ButtonDropdown from 'components/Button/ButtonDropdown'
 import FilesList from 'components/FilesList'
 import TitleBar from 'components/TitleBar'
+import PageCommands from 'components/PageCommands'
+import router from 'router'
 
 import BackButton from './BackButton'
 import SendModal from './SendModal'
@@ -66,6 +68,35 @@ const ConnectedProjectPage = connect(
 
     componentWillUnmount() {
       this.props.setPreview(null)
+    }
+
+    hasHTMLPreview() {
+      return !!this.props.preview && this.props.preview.type === 'html'
+    }
+
+    isMJMLFile() {
+      const { activeFile } = this.state
+      return !!activeFile && activeFile.name.endsWith('.mjml')
+    }
+
+    // the menu disables the items that do not apply, the checks keep a stale menu safe
+    commands = {
+      'new-file': () => this.openAddFileModal(),
+      'import-figma': () => this.openFigmaImportModal(),
+      save: () => this.props.preventAutoSave && this._editor && this._editor.handleSave(),
+      'export-html': () => this.hasHTMLPreview() && this.handleExportToHTML(),
+      'copy-html': () => this.hasHTMLPreview() && this.handleCopyHTML(),
+      screenshots: () => this.hasHTMLPreview() && this.isMJMLFile() && this.handleScreenshot(),
+      send: () => this.hasHTMLPreview() && this.openSendModal(),
+      'close-project': () => router.navigate('/'),
+      find: () => this._editor && this._editor.openSearch(),
+      beautify: () => this.isMJMLFile() && this._editor && this.handleBeautify(),
+      refine: () => this.isMJMLFile() && this.openRefineModal(),
+      templating: () => this.handleOpenSettings(),
+      'toggle-sidebar': () => {},
+      'toggle-preview': () => {},
+      'preview-desktop': () => {},
+      'preview-mobile': () => {},
     }
 
     handleBeautify = () => this._editor.beautify()
@@ -225,6 +256,15 @@ const ConnectedProjectPage = connect(
 
       return (
         <div className="fg-1 d-f fd-c o-n" tabIndex={0} ref={n => (this._page = n)}>
+          <PageCommands
+            commands={this.commands}
+            context={{
+              page: 'project',
+              hasMjmlFile: !!isMJMLFile,
+              hasPreview: this.hasHTMLPreview(),
+              preventAutoSave: !!preventAutoSave,
+            }}
+          />
           <TitleBar
             left={
               <>

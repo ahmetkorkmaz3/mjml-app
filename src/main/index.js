@@ -1,11 +1,11 @@
-import { app, BrowserWindow, Menu, nativeTheme, screen } from 'electron'
+import { app, BrowserWindow, Menu, nativeTheme, screen, shell } from 'electron'
 import { join } from 'node:path'
 import { autoUpdater } from 'electron-updater'
 import fixPath from 'fix-path'
 
 import { saveWindowSettings, getWindowSettings, getStoredSettings } from './window-settings'
 import { registerIpcHandlers } from './ipc'
-import buildMenu from './menu'
+import { buildMenuTemplate } from './menu'
 import { normalizeThemeSetting, windowColors } from './theme'
 import { fitBounds } from './window-bounds'
 
@@ -15,6 +15,7 @@ const isDevelopment = !app.isPackaged
 fixPath()
 
 let mainWindow = null
+let menuContext = { page: 'home', hasMjmlFile: false, hasPreview: false, preventAutoSave: false }
 let isRendererReady = false
 
 // if we double clicked on mjml file (or launched app with argument)
@@ -48,6 +49,31 @@ function updateWindowTheme() {
     mainWindow.setTitleBarOverlay({ color: colors.background, symbolColor: colors.symbol })
   } catch (err) {
     console.log(err)
+  }
+}
+
+function rebuildMenu() {
+  if (!mainWindow) {
+    return
+  }
+  const w = mainWindow
+  const template = buildMenuTemplate({
+    platform: process.platform,
+    context: menuContext,
+    theme: nativeTheme.themeSource,
+    send: command => w.webContents.send('redux-command', command),
+    actions: {
+      openExternal: url => shell.openExternal(url),
+      reload: () => w.webContents.reload(),
+      toggleDevTools: () => w.webContents.toggleDevTools(),
+      toggleFullScreen: () => w.setFullScreen(!w.isFullScreen()),
+    },
+  })
+  const menu = Menu.buildFromTemplate(template)
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(menu)
+  } else {
+    w.setMenu(menu)
   }
 }
 
@@ -131,13 +157,23 @@ async function createMainWindow() {
     })
   }
 
-  const menu = Menu.buildFromTemplate(buildMenu(w))
-
-  if (process.platform === 'darwin') {
-    Menu.setApplicationMenu(menu)
-  } else {
-    w.setMenu(menu)
+  if (!isMac) {
+    // the hidden title bar hides the menu bar, the Alt key shows it
+    w.setAutoHideMenuBar(true)
   }
+
+  // save the size and the position before the window closes (Cmd+W on the home page)
+  let isClosing = false
+  w.on('close', event => {
+    if (isClosing) {
+      return
+    }
+    event.preventDefault()
+    isClosing = true
+    saveWindowSettings(w)
+      .catch(err => console.log(err))
+      .finally(() => w.close())
+  })
 
   if (isDevelopment && process.env.ELECTRON_RENDERER_URL) {
     w.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -172,6 +208,7 @@ app.on('window-all-closed', () => {
 app.on('activate', async () => {
   if (mainWindow === null) {
     mainWindow = await createMainWindow()
+    rebuildMenu()
   }
 })
 
@@ -183,13 +220,23 @@ app.on('open-file', (event, filePath) => {
 })
 
 app.whenReady().then(async () => {
-  registerIpcHandlers({ onThemeChange: updateWindowTheme })
+  registerIpcHandlers({
+    onThemeChange: () => {
+      updateWindowTheme()
+      rebuildMenu()
+    },
+    onMenuContext: context => {
+      menuContext = { ...menuContext, ...context }
+      rebuildMenu()
+    },
+  })
   nativeTheme.on('updated', updateWindowTheme)
   await applyStoredTheme()
   if (isDevelopment) {
     await installExtensions()
   }
   mainWindow = await createMainWindow()
+  rebuildMenu()
   if (!isDevelopment) {
     autoUpdater.checkForUpdatesAndNotify()
   }
