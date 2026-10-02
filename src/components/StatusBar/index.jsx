@@ -16,6 +16,7 @@ function StatusBar({ status, errors, engine, templating, preventAutoSave, isMJML
             <button
               type="button"
               className="StatusBar--item StatusBar--errors"
+              title={errors.map(e => e.message).join('\n')}
               onClick={() => firstError && onGoToLine(firstError.line)}
             >
               <IconError size={13} />

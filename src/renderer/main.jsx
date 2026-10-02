@@ -27,7 +27,8 @@ async function boot() {
   await dispatch(loadProjects())
 }
 
-boot()
+// the middleware shows the error as an alert
+boot().catch(err => console.error(err))
 
 // the commands of the menu that work on each page
 registerCommand('about', () => dispatch(openModal('about')))

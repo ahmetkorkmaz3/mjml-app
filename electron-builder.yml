@@ -7,6 +7,30 @@ directories:
 files:
   - out/**/*
   - package.json
+  # files of the dependencies that the app never reads at run time
+  - '!**/*.map'
+  - '!**/*.d.ts'
+  - '!**/*.d.mts'
+  - '!**/*.d.cts'
+  - '!**/node_modules/**/*.md'
+  - '!**/node_modules/**/{test,tests,__tests__,docs,doc,example,examples}/**'
+
+# Electron features that the app does not use are off in the binary
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  # an unsigned build (yarn dist:dir) gets a new ad hoc signature after the fuses change
+  resetAdHocDarwinSignature: true
+
+publish:
+  provider: github
+  owner: ahmetkorkmaz3
+  repo: mjml-app
+  releaseType: draft
 
 protocols:
   name: MJML
@@ -15,17 +39,39 @@ protocols:
 
 fileAssociations:
   ext: mjml
-  icon: icon.ico
+  name: MJML
+  description: MJML email template
+  role: Editor
+  mimeType: text/x-mjml
+  # icon.icns on macOS, icon.ico on Windows
+  icon: icon
 
 mac:
   artifactName: ${name}-${version}-${os}.${ext}
   category: public.app-category.utility
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # notarytool runs only when the APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD and
+  # APPLE_TEAM_ID (or APPLE_API_KEY*) variables are set and the app is signed
+  notarize: true
+  # Apple silicon and Intel builds, electron-updater picks the right zip
   target:
-    - dmg
-    - zip
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+    - target: zip
+      arch:
+        - arm64
+        - x64
 
 linux:
   artifactName: ${name}-${version}-${os}-${arch}.${ext}
+  category: Development
+  maintainer: Ahmet Korkmaz
+  synopsis: The desktop app for MJML
+  description: Write, preview and export responsive emails with MJML.
   target:
     - target: AppImage
       arch:

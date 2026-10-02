@@ -16,6 +16,7 @@ export const {
   isEmptyOrDontExist,
   createOrEmpty,
   copyFile,
+  copyAssets,
   getMtime,
 } = api.fs
 

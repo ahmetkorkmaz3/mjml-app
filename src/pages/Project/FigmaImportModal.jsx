@@ -112,7 +112,7 @@ function FigmaImportModal({ isOpened, rootPath, ai, figma, closeModal, openModal
 
   const openSettings = () => {
     closeModal('figmaImport')
-    openModal('settings')
+    openModal('settings', { tab: 'AI & Figma' })
   }
 
   return (

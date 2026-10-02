@@ -1,15 +1,99 @@
-import { Component } from 'react'
+import { Component, useState } from 'react'
 import { Collapse } from 'react-collapse'
 
 import { MdInfo as IconInfo } from 'react-icons/md'
 import api from 'helpers/api'
+import Button from 'components/Button'
 import LogoMailjet from 'components/icons/logo-mailjet'
+
+// The keys are encrypted by the main process (secrets.js). The renderer can
+// save or remove a key and ask if it is saved, it cannot read it.
+const KEYS = [
+  { name: 'mailjet.apiKey', label: 'Mailjet API Key:' },
+  { name: 'mailjet.apiSecret', label: 'Mailjet API Secret:' },
+]
+
+function SecretField({ name, label, saved, onSaved }) {
+  const [value, setValue] = useState('')
+  const [message, setMessage] = useState(null)
+
+  const save = async next => {
+    const res = await api.secrets.set(name, next)
+    if (res && res.error) {
+      setMessage(res.error.message)
+      return
+    }
+    setValue('')
+    setMessage(next ? 'Saved' : 'Removed')
+    onSaved(name, Boolean(next))
+  }
+
+  return (
+    <div className="d-f ai-b">
+      <div style={{ width: 150 }} className="fs-0 t-small">
+        {!saved && <span className="red-star">{'*'}</span>}
+        {label}
+      </div>
+      <div className="fg-1 d-f ai-c">
+        <input
+          className="fg-1"
+          type="password"
+          value={value}
+          placeholder={saved ? 'Saved (type to replace)' : 'Not set'}
+          onChange={e => setValue(e.target.value.trim())}
+          onKeyDown={e => {
+            // Enter saves the key, it does not send the email
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              if (value) save(value)
+            }
+          }}
+        />
+        <Button className="ml-5" variant="secondary" disabled={!value} onClick={() => save(value)}>
+          {'Save'}
+        </Button>
+        {saved && (
+          <Button className="ml-5" variant="ghost" onClick={() => save('')}>
+            {'Remove'}
+          </Button>
+        )}
+        {message && <span className="ml-5 t-small">{message}</span>}
+      </div>
+    </div>
+  )
+}
 
 class MailjetInfos extends Component {
   state = {
-    isOpened: (({ APIKey, APISecret, SenderName, SenderEmail }) =>
-      !APIKey || !APISecret || !SenderName || !SenderEmail)(this.props),
+    isOpened: !this.props.SenderName || !this.props.SenderEmail,
+    // true for each saved key (the main process answers after the mount)
+    saved: {},
   }
+
+  componentDidMount() {
+    this._unmounted = false
+    Promise.all(KEYS.map(({ name }) => api.secrets.has(name))).then(values => {
+      if (this._unmounted) {
+        return
+      }
+      const saved = Object.fromEntries(KEYS.map(({ name }, i) => [name, Boolean(values[i])]))
+      this.setSaved(saved)
+      if (!values.every(Boolean)) {
+        this.setState({ isOpened: true })
+      }
+    })
+  }
+
+  componentWillUnmount() {
+    this._unmounted = true
+  }
+
+  setSaved(saved) {
+    this.setState({ saved })
+    this.props.onKeysChange(KEYS.every(({ name }) => saved[name]))
+  }
+
+  handleKeySaved = (name, isSaved) => this.setSaved({ ...this.state.saved, [name]: isSaved })
 
   handleOpenInfos = e => {
     e.preventDefault()
@@ -28,9 +112,9 @@ class MailjetInfos extends Component {
   }
 
   render() {
-    const { SenderName, SenderEmail, APIKey, APISecret } = this.props
+    const { SenderName, SenderEmail } = this.props
 
-    const { isOpened } = this.state
+    const { isOpened, saved } = this.state
 
     return (
       <div className="brand">
@@ -47,10 +131,7 @@ class MailjetInfos extends Component {
                   <b className="us-t ff-m">{SenderEmail}</b>
                 </span>
                 <br />
-                <span>
-                  {'Using API Key '}
-                  <b className="us-t ff-m">{APIKey}</b>
-                </span>
+                <span>{'Using the saved API key'}</span>
                 <br />
                 <a href="" className="a c-blue t-small" onClick={this.handleOpenInfos}>
                   {'Edit informations'}
@@ -72,34 +153,15 @@ class MailjetInfos extends Component {
               </div>
             </div>
             <div className="flow-v-20">
-              <div className="d-f ai-b">
-                <div style={{ width: 150 }} className="fs-0 t-small">
-                  {!APIKey && <span className="red-star">{'*'}</span>}
-                  {'Mailjet API Key:'}
-                </div>
-                <input
-                  ref={n => (this._firstInput = n)}
-                  className="fg-1"
-                  value={APIKey}
-                  onChange={this.handleChangeInput('APIKey')}
-                  placeholder="Mailjet API Key"
-                  type="text"
+              {KEYS.map(({ name, label }) => (
+                <SecretField
+                  key={name}
+                  name={name}
+                  label={label}
+                  saved={!!saved[name]}
+                  onSaved={this.handleKeySaved}
                 />
-              </div>
-
-              <div className="d-f ai-b">
-                <div style={{ width: 150 }} className="fs-0 t-small">
-                  {!APISecret && <span className="red-star">{'*'}</span>}
-                  {'Mailjet API Secret:'}
-                </div>
-                <input
-                  className="fg-1"
-                  value={APISecret}
-                  onChange={this.handleChangeInput('APISecret')}
-                  placeholder="Mailjet API Secret"
-                  type="text"
-                />
-              </div>
+              ))}
 
               <div className="d-f ai-b">
                 <div style={{ width: 150 }} className="fs-0 t-small">

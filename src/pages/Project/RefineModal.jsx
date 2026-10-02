@@ -11,7 +11,16 @@ import Button from 'components/Button'
 
 import { SETTINGS_CODES, STEP_LABELS } from './FigmaImportModal'
 
-function RefineModal({ isOpened, filePath, getEditor, ai, closeModal, openModal, addAlert }) {
+function RefineModal({
+  isOpened,
+  filePath,
+  rootPath,
+  getEditor,
+  ai,
+  closeModal,
+  openModal,
+  addAlert,
+}) {
   const [instruction, setInstruction] = useState('')
   const [progress, setProgress] = useState(null)
   const [error, setError] = useState(null)
@@ -41,6 +50,7 @@ function RefineModal({ isOpened, filePath, getEditor, ai, closeModal, openModal,
     try {
       res = await api.figma.refine({
         filePath,
+        rootPath,
         content: editor.getContent(),
         instruction: instruction.trim(),
         ai: ai.toJS(),
@@ -114,7 +124,7 @@ function RefineModal({ isOpened, filePath, getEditor, ai, closeModal, openModal,
                 ghost
                 onClick={() => {
                   closeModal('refine')
-                  openModal('settings')
+                  openModal('settings', { tab: 'AI & Figma' })
                 }}
               >
                 {'Open settings'}

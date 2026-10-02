@@ -8,6 +8,8 @@ export const SECRET_NAMES = [
   'ai.google',
   'ai.openai-compatible',
   'figma.token',
+  'mailjet.apiKey',
+  'mailjet.apiSecret',
 ]
 
 // Keeps API keys and tokens encrypted with Electron safeStorage (the OS

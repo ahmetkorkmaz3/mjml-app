@@ -78,7 +78,10 @@ export default connect(
 
     handleChangeMJMLPath = p => {
       if (!p) {
-        return this.setState({ pathStatus: 'unset', mjmlPath: '' })
+        // an empty path is saved too
+        this.setState({ pathStatus: 'unset', mjmlPath: '', mjmlVersion: null })
+        this.debounceSaveSettings()
+        return
       }
       this.setState({ mjmlPath: p })
       this.checkEngine()

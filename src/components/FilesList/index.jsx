@@ -17,8 +17,9 @@ import { openModal } from 'reducers/modals'
 import { addAlert } from 'reducers/alerts'
 
 import api from 'helpers/api'
-import { readDir, sortFiles, rename, copyFile } from 'helpers/fs'
+import { readDir, sortFiles, rename, copyFile, fileExists } from 'helpers/fs'
 import { duplicateName, fileKind, splitName } from 'helpers/files'
+import { checkNewName, isCaseChange } from 'helpers/rename'
 import { fitPreviewWidth } from 'helpers/layout'
 import { showContextMenu } from 'helpers/contextMenu'
 import { formatShortcut } from 'helpers/shortcut'
@@ -47,18 +48,24 @@ function FileIcon({ file }) {
   return <Icon className="FilesList--icon" size={15} />
 }
 
-function renameFile(path, oldName, newName, files) {
+// the errors have a message for the user
+async function renameFile(path, oldName, newName, files) {
   if (oldName === newName) {
     return
   }
-  const filesWithoutOld = files.filter(f => f.name !== oldName)
-  const fileExists = filesWithoutOld.some(f => f.name === newName)
-  if (fileExists) {
-    throw new Error('File already exists')
+  const reason = checkNewName(newName)
+  if (reason) {
+    throw new Error(reason)
   }
-  const oldFullName = pathModule.join(path, oldName)
   const newFullName = pathModule.join(path, newName)
-  return rename(oldFullName, newFullName)
+  // the rename replaces an existing file, so check first
+  const exists =
+    files.some(f => f.name === newName) ||
+    (!isCaseChange(oldName, newName) && (await fileExists(newFullName)))
+  if (exists) {
+    throw new Error('A file with this name already exists.')
+  }
+  return rename(pathModule.join(path, oldName), newFullName)
 }
 
 export default connect(
@@ -74,7 +81,6 @@ export default connect(
 )(
   class FilesList extends Component {
     state = {
-      isAdding: false,
       files: [],
       isDragging: false,
       renamedFile: null,
@@ -85,6 +91,10 @@ export default connect(
 
     _hasFocused = false
 
+    // the editor states and the saved contents of the files, while the project
+    // is open (see FileEditor)
+    _editorCache = { states: {}, lastWritten: {}, pendingWrites: {} }
+
     componentDidMount() {
       this.refresh()
       this._unsubscribeFocus = api.on('browser-window-focus', this.refresh)
@@ -93,13 +103,6 @@ export default connect(
     componentDidUpdate(prevProps, prevState) {
       if (prevProps.path !== this.props.path) {
         this.refresh()
-      }
-      if (!prevState.isAdding && this.state.isAdding) {
-        this._inputName.focus()
-      }
-      if (this.state.files.length > prevState.files.length && this._lastCreated) {
-        const node = this._refs[this._lastCreated]
-        node && node.focus()
       }
       if (!prevState.renamedFile && this.state.renamedFile) {
         // select the name without the extension, like the Finder
@@ -138,24 +141,6 @@ export default connect(
     }
 
     handleDetectOldSyntax = val => this.setState({ isOldSyntaxDetected: val })
-
-    handleSubmit = e => {
-      e.preventDefault()
-      const { path, onAddFile, onActiveFileChange } = this.props
-      let name = this._inputName.value
-      if (!name) {
-        return
-      }
-      name = `${name}.mjml`
-      const fileName = pathModule.join(path, name)
-      onAddFile(fileName)
-      onActiveFileChange({
-        isFolder: false,
-        name,
-      })
-      this._lastCreated = name
-      this.toggleAdding()
-    }
 
     handleClickFactory = f => () => {
       const p = pathModule.join(this.props.path, f.name)
@@ -212,11 +197,28 @@ export default connect(
         case 'Escape':
           this.handleCancelRename()
           break
-        case 'Enter':
+        case 'Enter': {
+          const { path } = this.props
+          const { renamedFile, files } = this.state
+          const newName = this.state.newName.trim()
+          if (newName === renamedFile.name) {
+            this.handleCancelRename()
+            break
+          }
+          const { activeFile } = this.props
+          const isOpen =
+            !renamedFile.isFolder && !!activeFile && activeFile.name === renamedFile.name
+          const editor = isOpen ? this._editor : null
+          // the editor writes its last change to the old name before the rename
+          if (editor) editor.leaveFile()
           try {
-            const { path } = this.props
-            const { newName, renamedFile, files } = this.state
             await renameFile(path, renamedFile.name, newName, files)
+            if (editor) {
+              this.moveEditorCache(
+                pathModule.join(path, renamedFile.name),
+                pathModule.join(path, newName),
+              )
+            }
             const newFile = { name: newName, isFolder: renamedFile.isFolder }
             const newFiles = files.map(f => {
               if (f === renamedFile) {
@@ -228,12 +230,25 @@ export default connect(
             this.setState({ files: newFiles })
             this.props.onActiveFileChange(newFile)
             this.handleCancelRename()
-          } catch (e) {
-            this.props.addAlert('A file with this name already exists', 'error')
+          } catch (err) {
+            // the file keeps its name: load it again in the editor
+            if (editor) editor.loadContent()
+            this.props.addAlert(`Could not rename ${renamedFile.name}: ${err.message}`, 'error')
           }
           break
+        }
         default:
           break
+      }
+    }
+
+    // the unsaved changes and the history go with the file
+    moveEditorCache(oldPath, newPath) {
+      for (const map of Object.values(this._editorCache)) {
+        if (oldPath in map) {
+          map[newPath] = map[oldPath]
+          delete map[oldPath]
+        }
       }
     }
 
@@ -315,13 +330,6 @@ export default connect(
       })
     }
 
-    refsFactory = () => {
-      this._refs = {}
-      return refName => node => {
-        this._refs[refName] = node
-      }
-    }
-
     refresh = () => {
       const { path } = this.props
       readDir(path).then(files => {
@@ -360,29 +368,9 @@ export default connect(
       this._editor.focus()
     }
 
-    toggleAdding = e => {
-      if (e) {
-        e.preventDefault()
-      }
-      this.setState(s => ({ isAdding: !s.isAdding }))
-    }
-
-    cancelAdd = e => {
-      if (e) {
-        e.preventDefault()
-      }
-      this.setState(
-        s => ({ isAdding: !s.isAdding }),
-        () => {
-          this._addBtn.focus()
-        },
-      )
-    }
-
     renderSidebar() {
       const { files, renamedFile, newName } = this.state
       const { activeFile, path, rootPath, onNewFile, onImportFigma } = this.props
-      const setRef = this.refsFactory()
       const isInSubFolder = path !== rootPath
 
       return (
@@ -404,7 +392,7 @@ export default connect(
               size="sm"
               icon
               aria-label="Import from Figma"
-              data-tooltip="Import from Figma"
+              data-tooltip={`Import from Figma (${formatShortcut('CmdOrCtrl+Shift+F', api.platform)})`}
               onClick={onImportFigma}
             >
               <FaFigma size={12} />
@@ -434,7 +422,6 @@ export default connect(
               ) : (
                 <button
                   type="button"
-                  ref={setRef(f.name)}
                   key={f.name}
                   data-name={f.name}
                   title={f.name}
@@ -457,7 +444,7 @@ export default connect(
 
     renderEditor() {
       const { isDragging, isOldSyntaxDetected } = this.state
-      const { onEditorRef, activeFile, path } = this.props
+      const { onEditorRef, activeFile, path, rootPath } = this.props
       const fullActiveFile = pathModule.join(path, (activeFile && activeFile.name) || '')
 
       return (
@@ -470,6 +457,8 @@ export default connect(
                 onEditorRef(n)
               }}
               fileName={fullActiveFile}
+              rootPath={rootPath}
+              cache={this._editorCache}
               disablePointer={isDragging}
               onDetectOldSyntax={this.handleDetectOldSyntax}
             />
