@@ -1,16 +1,16 @@
 import { promisify } from 'node:util'
-import { writeFile, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
-import { BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, safeStorage, shell } from 'electron'
 import storage from 'electron-json-storage'
 
+import { toErrorResult } from './errors'
+import { createFigmaImporter } from './figma-import'
+import { cleanUpScreenshot, renderScreenshot, takeScreenshot } from './screenshot'
+import { createSecretStore, SECRET_NAMES } from './secrets'
 import { compile } from './templating'
 
 const storageGet = promisify(storage.get)
 const storageSet = promisify(storage.set)
-
-const SCREENSHOT_TMP_FILE = 'tpm-mjml-preview.html'
 
 const EXTERNAL_PROTOCOLS = ['http:', 'https:', 'mailto:']
 
@@ -24,47 +24,6 @@ function openExternal(url) {
   if (EXTERNAL_PROTOCOLS.includes(protocol)) {
     return shell.openExternal(url)
   }
-}
-
-function takeScreenshot(html, deviceWidth, workingDirectory) {
-  return new Promise((resolve, reject) => {
-    const win = new BrowserWindow({
-      width: deviceWidth,
-      show: false,
-    })
-
-    const tmpFileName = join(workingDirectory, SCREENSHOT_TMP_FILE)
-
-    win.webContents.once('did-finish-load', async () => {
-      try {
-        const height = await win.webContents.executeJavaScript(
-          "document.querySelector('body').getBoundingClientRect().height",
-        )
-        win.setSize(deviceWidth, Math.ceil(height) + 50)
-        // Window is not fully painted after this event, hence setTimeout()...
-        setTimeout(async () => {
-          try {
-            const img = await win.webContents.capturePage()
-            resolve(img.toPNG())
-          } catch (err) {
-            reject(err)
-          } finally {
-            win.close()
-          }
-        }, 500)
-      } catch (err) {
-        win.close()
-        reject(err)
-      }
-    })
-
-    writeFile(tmpFileName, html)
-      .then(() => win.loadURL(pathToFileURL(tmpFileName).href))
-      .catch(err => {
-        win.close()
-        reject(err)
-      })
-  })
 }
 
 export function registerIpcHandlers() {
@@ -98,7 +57,37 @@ export function registerIpcHandlers() {
   ipcMain.handle('screenshot:take', (e, html, deviceWidth, workingDirectory) =>
     takeScreenshot(html, deviceWidth, workingDirectory),
   )
-  ipcMain.handle('screenshot:cleanUp', (e, workingDirectory) =>
-    unlink(join(workingDirectory, SCREENSHOT_TMP_FILE)),
-  )
+  ipcMain.handle('screenshot:cleanUp', (e, workingDirectory) => cleanUpScreenshot(workingDirectory))
+
+  const secrets = createSecretStore({
+    filePath: join(app.getPath('userData'), 'secrets.json'),
+    safeStorage,
+  })
+  const importer = createFigmaImporter({ secrets, renderScreenshot })
+  const unknownSecret = { error: { code: 'UNKNOWN_SECRET', message: 'Unknown secret.' } }
+
+  ipcMain.handle('secrets:isAvailable', () => secrets.isAvailable())
+  ipcMain.handle('secrets:has', (e, name) => SECRET_NAMES.includes(name) && secrets.has(name))
+  ipcMain.handle('secrets:set', async (e, name, value) => {
+    if (!SECRET_NAMES.includes(name)) {
+      return unknownSecret
+    }
+    try {
+      await secrets.set(name, value)
+      return { ok: true }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  const sendProgress = e => progress => {
+    if (!e.sender.isDestroyed()) {
+      e.sender.send('figma-import-progress', progress)
+    }
+  }
+  ipcMain.handle('figma:import', (e, params) => importer.importDesign(params, sendProgress(e)))
+  ipcMain.handle('figma:refine', (e, params) => importer.refine(params, sendProgress(e)))
+  ipcMain.handle('figma:cancel', () => importer.cancel())
+  ipcMain.handle('figma:testConnection', (e, figma) => importer.testFigma(figma))
+  ipcMain.handle('ai:testConnection', (e, ai) => importer.testAi(ai))
 }
