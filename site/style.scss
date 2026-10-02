@@ -1,4 +1,3 @@
-@use '../src/styles/vars.scss';
 @use '../src/styles/global.scss';
 @use '../src/styles/utils.scss';
 @use '../src/components/Button/style.scss';
@@ -54,7 +53,7 @@ h1 {
 }
 
 .video-container {
-  background: vars.$bg;
+  background: var(--bg-window);
 }
 
 .shadow {
