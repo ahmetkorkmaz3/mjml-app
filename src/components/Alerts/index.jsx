@@ -1,29 +1,43 @@
 import { createPortal } from 'react-dom'
 import cx from 'classnames'
 import { connect } from 'react-redux'
-import { MdError as IconError } from 'react-icons/md'
+import {
+  MdCheckCircle as IconSuccess,
+  MdError as IconError,
+  MdInfo as IconInfo,
+  MdClose as IconClose,
+} from 'react-icons/md'
 
 import { removeAlert } from 'reducers/alerts'
 
 import './style.scss'
 
+const ICONS = { success: IconSuccess, error: IconError, info: IconInfo }
+
 function Alerts({ alerts, removeAlert }) {
   return createPortal(
-    <div className="Alerts">
-      {alerts.map(a => (
-        <div
-          key={a.id}
-          onClick={() => removeAlert(a.id)}
-          className={cx('Alerts--item d-f ai-c', a.type)}
-        >
-          {a.type === 'error' && <IconError className="mr-10 fs-0" size={30} />}
-          <div>
-            {Array.isArray(a.message)
-              ? a.message.map((line, i) => <div key={i}>{line}</div>)
-              : a.message}
+    <div className="Alerts" role="status" aria-live="polite">
+      {alerts.map(a => {
+        const Icon = ICONS[a.type] || IconInfo
+        return (
+          <div key={a.id} className={cx('Alerts--item', a.type)}>
+            <Icon className="Alerts--icon" size={16} />
+            <div className="Alerts--message us-t">
+              {Array.isArray(a.message)
+                ? a.message.map((line, i) => <div key={i}>{line}</div>)
+                : a.message}
+            </div>
+            <button
+              type="button"
+              className="Alerts--close"
+              aria-label="Close"
+              onClick={() => removeAlert(a.id)}
+            >
+              <IconClose size={14} />
+            </button>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>,
     document.body,
   )
