@@ -23,6 +23,8 @@ import SnippetImports from 'components/SnippetImports'
 import SnippetsList from 'components/SnippetsList'
 import ButtonDropdown from 'components/Button/ButtonDropdown'
 
+import { FaFigma } from 'react-icons/fa'
+import AIFigmaSettings from './AIFigmaSettings'
 import MJMLEngine from 'components/MJMLEngine'
 import MjmlConfigPath from 'components/MjmlConfigPath'
 
@@ -267,6 +269,10 @@ export default connect(
                   />
                   <span>{'Desktop size'}</span>
                 </div>
+              </TabItem>
+
+              <TabItem title="AI & Figma" className="flow-v-10" icon={FaFigma}>
+                <AIFigmaSettings />
               </TabItem>
 
               <TabItem title="Snippets" className="d-b" icon={IconCode}>
