@@ -11,6 +11,7 @@ import selectedProjects from './selectedProjects'
 import externalFileOverlay from './externalFileOverlay'
 import search from './search'
 import snippets from './snippets'
+import theme from './theme'
 
 const rootReducer = combineReducers({
   settings,
@@ -24,6 +25,7 @@ const rootReducer = combineReducers({
   externalFileOverlay,
   search,
   snippets,
+  theme,
 })
 
 export default rootReducer

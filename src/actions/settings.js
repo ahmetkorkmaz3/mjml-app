@@ -31,11 +31,11 @@ export function loadSettings() {
         autoFold: false,
         foldLevel: 1,
         highlightTag: false,
-        lightTheme: false,
         useTab: false,
         tabSize: 2,
         indentSize: 2,
         preventAutoSave: false,
+        fontSize: 13,
       },
       mjml: {
         minify: false,
@@ -67,6 +67,15 @@ export function loadSettings() {
       figma: {
         source: 'mcp',
         mcpURL: 'http://127.0.0.1:3845/mcp',
+      },
+      appearance: {
+        theme: 'system',
+      },
+      layout: {
+        sidebarWidth: 220,
+        sidebarCollapsed: false,
+        previewCollapsed: false,
+        projectSort: 'recent',
       },
       snippets: [],
       templating: [],

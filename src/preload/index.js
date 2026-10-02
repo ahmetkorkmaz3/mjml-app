@@ -21,6 +21,8 @@ const EVENT_CHANNELS = [
 
 const api = {
   platform: process.platform,
+  // the theme of the first frame, the main process gives it as an argument
+  initialTheme: process.argv.includes('--mjml-theme=light') ? 'light' : 'dark',
   homedir: os.homedir(),
 
   path: {
@@ -55,6 +57,10 @@ const api = {
     isAvailable: () => ipcRenderer.invoke('secrets:isAvailable'),
     has: name => ipcRenderer.invoke('secrets:has', name),
     set: (name, value) => ipcRenderer.invoke('secrets:set', name, value),
+  },
+
+  theme: {
+    set: setting => ipcRenderer.invoke('theme:set', setting),
   },
 
   storage: {
