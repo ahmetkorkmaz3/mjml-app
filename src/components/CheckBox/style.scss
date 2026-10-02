@@ -1,14 +1,45 @@
-.Checkbox {
-  margin-left: -5px;
-  margin-right: -5px;
+.Checkbox,
+.Radio {
+  gap: var(--space-2);
+  padding: 3px 0;
+  color: var(--fg);
+  font-size: var(--text-md);
+}
 
-  &:hover {
-    color: white;
+.Checkbox--box,
+.Radio--box {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-input);
+  color: var(--fg-on-accent);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+
+  &.isChecked {
+    border-color: var(--accent);
+    background: var(--accent);
   }
 }
 
-.Radio {
-  &:hover {
-    color: white;
+.Checkbox--box {
+  border-radius: var(--radius-sm);
+}
+
+.Radio--box {
+  border-radius: 50%;
+
+  &.isChecked::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--fg-on-accent);
   }
 }
