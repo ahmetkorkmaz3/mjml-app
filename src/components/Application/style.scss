@@ -1,4 +1,4 @@
-@import '../../styles/vars.scss';
+@use '../../styles/vars.scss';
 
 .Application {
   position: fixed;
@@ -21,12 +21,54 @@
   right: 0;
   bottom: 0;
   z-index: 999999;
-  background: $bg;
+  background: vars.$bg;
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease-out;
   * {
     pointer-events: none;
+  }
+
+  &.isVisible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.DropFile--icon,
+.DropFile--label {
+  transition: transform 300ms cubic-bezier(0.2, 1.4, 0.5, 1);
+}
+
+.DropFile--icon {
+  transform: translate3d(0, -40px, 0);
+}
+
+.DropFile--label {
+  transform: translate3d(0, 40px, 0);
+}
+
+.DropFile.isVisible {
+  .DropFile--icon,
+  .DropFile--label {
+    transform: translate3d(0, 0, 0);
+  }
+  .DropFile--border {
+    transform: scale(1);
+  }
+}
+
+.AppPlaceholder {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease-out;
+
+  &.isVisible {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 
@@ -36,5 +78,7 @@
   left: 0px;
   right: 0px;
   bottom: 0px;
-  border: 50px solid rgba($lighterGrey, 0.2);
+  border: 50px solid rgba(vars.$lighterGrey, 0.2);
+  transform: scale(1.1);
+  transition: transform 300ms ease-out;
 }

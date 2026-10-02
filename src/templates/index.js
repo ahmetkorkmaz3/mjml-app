@@ -1,2 +1,2 @@
-export singleBasic from './single-basic'
-export headerFooter from './separated-header-footer'
+export { default as singleBasic } from './single-basic'
+export { default as headerFooter } from './separated-header-footer'

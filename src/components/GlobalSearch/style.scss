@@ -1,4 +1,4 @@
-@import '../../styles/vars.scss';
+@use '../../styles/vars.scss';
 
 .GlobalSearch {
   position: relative;
@@ -18,7 +18,7 @@
 
   &:focus {
     outline: none;
-    box-shadow: 0 0 3px 0 $blue;
+    box-shadow: 0 0 3px 0 vars.$blue;
   }
 }
 

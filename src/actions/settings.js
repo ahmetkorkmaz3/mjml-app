@@ -1,12 +1,11 @@
-import storage from 'electron-json-storage'
-import { promisify } from 'es6-promisify'
 import defaultsDeep from 'lodash/defaultsDeep'
 import omit from 'lodash/omit'
 
+import api from 'helpers/api'
 import { setError } from 'reducers/error'
 
-const storageGet = promisify(storage.get)
-const storageSet = promisify(storage.set)
+const storageGet = key => api.storage.get(key)
+const storageSet = (key, value) => api.storage.set(key, value)
 
 export function loadSettings() {
   return async dispatch => {
@@ -16,7 +15,7 @@ export function loadSettings() {
       res = await storageGet('settings')
 
       // check for old format and reformat
-      if (typeof res.projects === 'object' && !(res.projects instanceof Array)) {
+      if (typeof res.projects === 'object' && !Array.isArray(res.projects)) {
         res = res.projects
         await storageSet('settings', res)
       }
@@ -88,7 +87,7 @@ export function saveSettings() {
         type: 'SAVE_SETTINGS',
         payload: settings,
       })
-      storage.set('settings', settings)
+      storageSet('settings', settings)
     })
   }
 }

@@ -1,7 +1,7 @@
-@import '../src/styles/vars.scss';
-@import '../src/styles/global.scss';
-@import '../src/styles/utils.scss';
-@import '../src/components/Button/style.scss';
+@use '../src/styles/vars.scss';
+@use '../src/styles/global.scss';
+@use '../src/styles/utils.scss';
+@use '../src/components/Button/style.scss';
 
 body {
   font-weight: 200;
@@ -54,7 +54,7 @@ h1 {
 }
 
 .video-container {
-  background: $bg;
+  background: vars.$bg;
 }
 
 .shadow {

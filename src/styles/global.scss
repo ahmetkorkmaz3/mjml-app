@@ -1,17 +1,6 @@
-@import '~react-select/dist/react-select.min.css';
-@import '~codemirror/addon/dialog/dialog.css';
-@import '~codemirror/addon/search/matchesonscrollbar.css';
-@import '~balloon-css/balloon.css';
-
-@import './vars.scss';
-@import './animations.scss';
-@import './select.scss';
-
-[data-balloon]:before,
-[data-balloon]:after {
-  transition: none !important;
-  color: $evenLighterGrey;
-}
+@use 'vars.scss';
+@use 'animations.scss';
+@use 'select.scss';
 
 *,
 *:before,
@@ -28,7 +17,7 @@
 }
 
 *:focus {
-  outline: 2px solid rgba($blue, 0.6);
+  outline: 2px solid rgba(vars.$blue, 0.6);
 }
 
 ::-webkit-scrollbar {
@@ -50,10 +39,9 @@ body {
     width: 0;
   }
 
-  font-family: Lato,
-  sans-serif;
+  font-family: Lato, sans-serif;
   font-size: 14px;
-  color: $evenLighterGrey;
+  color: vars.$evenLighterGrey;
 
   &.with-scroll {
     &::-webkit-scrollbar {
@@ -98,8 +86,8 @@ textarea {
 
 .round-label {
   font-weight: bold;
-  background: $yellow;
-  color: $grey;
+  background: vars.$yellow;
+  color: vars.$grey;
   padding: 2px 8px;
 }
 
@@ -123,7 +111,7 @@ a {
   }
 }
 
-.Resizer {
+.split-pane-divider {
   position: relative;
   z-index: 4000;
 
@@ -131,13 +119,19 @@ a {
     background: #34343f;
   }
 
-  &:active {
+  &:active,
+  &.dragging {
     background: #42424f;
+  }
+
+  &:focus {
+    outline: none;
   }
 }
 
-.Resizer.vertical {
-  width: 12px;
+.split-pane-divider.horizontal {
+  // the library sets a 1px width inline, use a larger grab area
+  width: 12px !important;
   margin: 0 -6px;
   border-left: 1px solid rgba(255, 255, 255, 0);
   border-right: 1px solid rgba(255, 255, 255, 0);
@@ -182,6 +176,6 @@ a {
 }
 
 .red-star {
-  color: $red;
+  color: vars.$red;
   margin-right: 5px;
 }

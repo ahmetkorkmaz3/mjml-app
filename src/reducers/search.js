@@ -1,7 +1,8 @@
 import { handleActions, createAction } from 'redux-actions'
-import path from 'path'
 import { Set } from 'immutable'
 import Fuse from 'fuse.js'
+
+import { path } from 'helpers/api'
 
 const FUSE_OPTS = {
   keys: ['name'],
@@ -17,7 +18,7 @@ const state = {
 
 function compileResults(fuse, text) {
   const fuseResults = fuse.search(text) || []
-  return Set(fuseResults.map(proj => proj.path))
+  return Set(fuseResults.map(({ item }) => item.path))
 }
 
 function resetSearch(state) {

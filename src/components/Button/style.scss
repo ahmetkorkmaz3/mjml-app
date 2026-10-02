@@ -1,4 +1,5 @@
-@import '../../styles/vars.scss';
+@use 'sass:color';
+@use '../../styles/vars.scss';
 
 .Button {
   white-space: pre;
@@ -19,15 +20,15 @@
   }
 
   &.primary {
-    background: $blue;
+    background: vars.$blue;
     font-weight: bold;
     color: white;
     &:hover:not(:disabled),
     &:focus:not(:disabled) {
-      background: lighten($blue, 2);
+      background: color.adjust(vars.$blue, $lightness: 2%);
     }
     &:active:not(:disabled) {
-      background: darken($blue, 5);
+      background: color.adjust(vars.$blue, $lightness: -5%);
     }
     &:disabled {
       opacity: 0.4;
@@ -48,7 +49,7 @@
 
   &.ghost,
   &.transparent {
-    color: $lighterGrey;
+    color: vars.$lighterGrey;
     &:hover,
     &:focus {
       background-color: #3a3a43;
@@ -57,7 +58,7 @@
   }
 
   &.ghost {
-    background-color: $bg-light;
+    background-color: vars.$bg-light;
   }
 
   &.unclickable {
@@ -70,10 +71,10 @@
   top: 100%;
   right: 0;
   margin-top: 2px;
-  background: $bg-light;
+  background: vars.$bg-light;
   box-shadow: rgba(black, 0.2) 0 15px 100px;
   z-index: 1;
-  
+
   &.position-auto {
     right: auto;
   }
@@ -92,7 +93,7 @@
   }
 
   &.isActive {
-    background: $blue;
+    background: vars.$blue;
     color: white;
   }
 
@@ -108,4 +109,8 @@
 
 .ButtonDropdown--dropdown-item-title {
   white-space: pre;
+}
+
+.BackButton--label {
+  transition: transform 250ms cubic-bezier(0.2, 1.4, 0.5, 1);
 }

@@ -1,5 +1,13 @@
 appId: com.mjmlio.mjmlapp
 
+directories:
+  buildResources: build
+  output: release
+
+files:
+  - out/**/*
+  - package.json
+
 protocols:
   name: MJML
   schemes:

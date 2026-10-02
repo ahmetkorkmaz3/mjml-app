@@ -1,6 +1,6 @@
-import path from 'path'
+import { path } from 'helpers/api'
 
-import { createOrEmpty, fsWriteFile } from 'helpers/fs'
+import { createOrEmpty, writeFile } from 'helpers/fs'
 
 import { openProject } from 'actions/projects'
 import { addAlert } from 'reducers/alerts'
@@ -10,7 +10,7 @@ export default function createFromGallery(location, MJMLContent) {
     try {
       await createOrEmpty(location)
       const fileLocation = path.join(location, 'index.mjml')
-      await fsWriteFile(fileLocation, MJMLContent)
+      await writeFile(fileLocation, MJMLContent)
       dispatch(openProject(location))
     } catch (err) {
       dispatch(addAlert(err.message || err, 'error'))

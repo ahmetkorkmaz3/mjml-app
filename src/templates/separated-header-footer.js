@@ -25,7 +25,7 @@ export default {
       </mj-column>
 
       <mj-column>
-        <mj-image width="200" src="http://placehold.it/200x200"></mj-image>
+        <mj-image width="200" src="https://placehold.co/200x200/png"></mj-image>
       </mj-column>
 
     </mj-section>

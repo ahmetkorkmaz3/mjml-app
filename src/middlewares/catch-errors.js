@@ -5,6 +5,6 @@ export default store => next => action => {
     return next(action)
   } catch (err) {
     store.dispatch(setError(err))
-    console.error(err) // eslint-disable-line no-console
+    console.error(err)
   }
 }

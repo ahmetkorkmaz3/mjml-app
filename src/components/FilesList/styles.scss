@@ -1,4 +1,5 @@
-@import '../../styles/vars.scss';
+@use 'sass:color';
+@use '../../styles/vars.scss';
 
 .FilesList--list {
   flex: 1;
@@ -12,7 +13,7 @@
   width: 100%;
   text-align: left;
   font-size: 13px;
-  color: $almostWhite;
+  color: vars.$almostWhite;
 
   &.renaming {
     padding: 0 0 0 5px;
@@ -27,9 +28,9 @@
     outline: none;
   }
   &.active {
-    color: $blue;
-    background-color: rgba($blue, 0.1) !important;
-    box-shadow: inset $blue 2px 0;
+    color: vars.$blue;
+    background-color: rgba(vars.$blue, 0.1) !important;
+    box-shadow: inset vars.$blue 2px 0;
     .FilesList--file-actions {
       display: block;
     }
@@ -40,7 +41,7 @@
 
   &:hover:not(.active),
   &:focus:not(.active) {
-    color: lighten($almostWhite, 20);
+    color: color.adjust(vars.$almostWhite, $lightness: 20%);
   }
 }
 
@@ -102,7 +103,7 @@
 
 .FileList--preview-actions {
   pointer-events: auto;
-  background: $bg;
+  background: vars.$bg;
   box-shadow: rgba(black, 0.6) 0 3px 20px;
   border-radius: 3px;
   .Button:first-child {
@@ -114,7 +115,7 @@
     border-bottom-right-radius: 3px;
   }
   .Button.isActive {
-    background: $blue;
+    background: vars.$blue;
     color: white;
   }
 }
@@ -152,15 +153,15 @@
   }
   .action-remove {
     &:hover {
-      color: $red;
+      color: vars.$red;
     }
   }
 }
 
 .OldSyntaxDetected {
-  background: rgba($yellow, 0.15);
+  background: rgba(vars.$yellow, 0.15);
   border: 1px solid rgba(white, 0.1);
-  color: $yellow;
+  color: vars.$yellow;
   padding: 20px;
 }
 
@@ -174,11 +175,20 @@
 
   &-modal {
     .bordered {
-      border: 1px solid $evenLighterGrey;
+      border: 1px solid vars.$evenLighterGrey;
     }
 
     .yaml-invalid {
-      color: $red;
+      color: vars.$red;
     }
+  }
+}
+
+.FilesList--preview-content {
+  opacity: 0;
+  transition: opacity 300ms ease-out;
+
+  &.isVisible {
+    opacity: 1;
   }
 }

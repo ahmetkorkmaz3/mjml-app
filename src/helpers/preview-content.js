@@ -1,20 +1,4 @@
-import erb from 'erb'
-import Handlebars from 'handlebars'
+import api from 'helpers/api'
 
-export const compile = async ({ raw, engine, variables = {} }) => {
-  if (engine === 'erb') {
-    const res = await erb({
-      timeout: 5000,
-      data: { values: variables },
-      template: raw,
-    })
-
-    return res
-  }
-  if (engine === 'handlebars') {
-    const res = Handlebars.compile(raw)(variables)
-    return res
-  }
-
-  return raw
-}
+// apply the templating engine (erb, handlebars) of the project to the HTML
+export const compile = params => api.templating.compile(params)

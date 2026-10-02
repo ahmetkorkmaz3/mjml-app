@@ -1,12 +1,8 @@
-import fs from 'fs'
-import os from 'os'
-import path from 'path'
-import trash from 'trash'
-import { replace } from 'react-router-redux'
-import { kebabCase, find, endsWith } from 'lodash'
+import kebabCase from 'lodash/kebabCase'
 
-import { takeScreenshot } from 'helpers/takeScreenshot'
+import api, { path } from 'helpers/api'
 import mjml2html from 'helpers/mjml'
+import router from 'router'
 
 import { addAlert } from 'reducers/alerts'
 import { openExternalFileOverlay, closeExternalFileOverlay } from 'reducers/externalFileOverlay'
@@ -19,26 +15,25 @@ import {
 } from 'actions/settings'
 
 import {
-  fsStat,
-  recursiveCopy,
+  copyDir,
   fileDialog,
-  fsReadFile,
-  fsReadDir,
-  fsAccess,
-  fsRename,
-  fsWriteFile,
-  fsMkdir,
+  readFile,
+  readDirNames,
+  isReadWrite,
+  rename,
+  writeFile,
+  mkdir,
   fileExists,
   isValidDir,
 } from 'helpers/fs'
 
-const HOME_DIR = os.homedir()
+const HOME_DIR = api.homedir
 
 export function addProject(p) {
   return async (dispatch, getState) => {
     if (!p) {
       const state = getState()
-      p = fileDialog({
+      p = await fileDialog({
         defaultPath: state.settings.get('lastOpenedFolder') || HOME_DIR,
         properties: ['openDirectory', 'createDirectory'],
       })
@@ -47,7 +42,9 @@ export function addProject(p) {
       }
     }
 
-    await fsAccess(p, fs.constants.R_OK | fs.constants.W_OK)
+    if (!(await isReadWrite(p))) {
+      throw new Error(`Cannot read or write in ${p}`)
+    }
 
     dispatch(saveLastOpenedFolder(p))
     dispatch(openProject(p))
@@ -59,14 +56,14 @@ export function removeProject(p, shouldDeleteFolder = false) {
     dispatch({ type: 'PROJECT_REMOVE', payload: p })
     dispatch(saveSettings())
     if (shouldDeleteFolder) {
-      trash(p)
+      api.shell.trashItem(p)
     }
   }
 }
 
 export function openProject(projectPath) {
   return dispatch => {
-    dispatch(replace(`/project?path=${encodeURIComponent(projectPath)}`))
+    router.navigate(`/project?path=${encodeURIComponent(projectPath)}`, { replace: true })
     dispatch(loadIfNeeded(projectPath))
   }
 }
@@ -95,18 +92,24 @@ async function loadProject(p, mjmlPath) {
       const indexExists = await fileExists(indexFilePath)
 
       if (!indexExists) {
-        const dir = await fsReadDir(p)
-        const fallback = find(dir, name => endsWith(name, '.mjml'))
+        const dir = await readDirNames(p)
+        const fallback = dir.find(name => name.endsWith('.mjml'))
 
         if (fallback) indexFilePath = path.join(p, fallback)
       }
 
-      const mjmlContent = await fsReadFile(indexFilePath, { encoding: 'utf8' })
+      const mjmlContent = await readFile(indexFilePath)
       const { html: htmlContent } = await mjml2html(mjmlContent, indexFilePath, mjmlPath)
       res.html = htmlContent
-    } catch (e) {} // eslint-disable-line
+    } catch (e) {}
   }
   return res
+}
+
+function getMJMLPath(settings) {
+  // eventually get the custom mjml path set in settings
+  const mjmlManual = settings.getIn(['mjml', 'engine']) === 'manual'
+  return mjmlManual ? settings.getIn(['mjml', 'path']) : undefined
 }
 
 export function loadProjects() {
@@ -116,9 +119,7 @@ export function loadProjects() {
 
     const projectsPaths = settings.get('projects')
 
-    // eventually get the custom mjml path set in settings
-    const mjmlManual = settings.getIn(['mjml', 'engine']) === 'manual'
-    const mjmlPath = mjmlManual ? settings.getIn(['mjml', 'path']) : undefined
+    const mjmlPath = getMJMLPath(settings)
     const load = proj => loadProject(proj, mjmlPath)
 
     let enriched = await Promise.all(projectsPaths.map(load))
@@ -152,7 +153,7 @@ export function updateProjectPreview(p, html) {
 
 export function renameProject(oldPath, newPath) {
   return async dispatch => {
-    await fsRename(oldPath, newPath)
+    await rename(oldPath, newPath)
     dispatch({
       type: 'PROJECT_RENAME',
       payload: { oldPath, newPath },
@@ -180,40 +181,36 @@ async function massExport(state, asyncJob, allFiles = false) {
   if (projectsToExport.size === 0) {
     return
   }
-  const targetPath = fileDialog({
+  const targetPath = await fileDialog({
     defaultPath: state.settings.get('lastExportedFolder') || HOME_DIR,
     properties: ['openDirectory', 'createDirectory'],
   })
   if (!targetPath) {
     return
   }
+  const mjmlPath = getMJMLPath(state.settings)
+
   for (let i = 0; i < projectsToExport.size; i++) {
     const p = projectsToExport.get(i)
     const projPath = p.get('path')
     const projBaseName = path.basename(projPath)
-    
+
     if (allFiles) {
-      // eventually get the custom mjml path set in settings
-      const { settings } = state
-      const projectsPaths = settings.get('projects')
-      const mjmlManual = settings.getIn(['mjml', 'engine']) === 'manual'
-      const mjmlPath = mjmlManual ? settings.getIn(['mjml', 'path']) : undefined
-      
-      const files = await fsReadDir(projPath)
-      const mjmlFiles = files.filter(name => name.includes('.mjml'))
-      if (!mjmlFiles.length) return
-      
+      const files = await readDirNames(projPath)
+      const mjmlFiles = files.filter(name => name.endsWith('.mjml'))
+      if (!mjmlFiles.length) continue
+
       const targetDir = path.join(targetPath, kebabCase(projBaseName))
-      if (!fs.existsSync(targetDir)) await fsMkdir(targetDir)
-      
+      await mkdir(targetDir)
+
       for (const file of mjmlFiles) {
-        const mjml = await fsReadFile(path.join(projPath, file), 'utf8')
-        const result = await mjml2html(mjml, projPath, mjmlPath)
-        
-        const targetName = file.replace('.mjml', '.html')
-        const targetPath = path.join(targetDir, targetName)
-        
-        await asyncJob(targetPath, result.html)
+        const filePath = path.join(projPath, file)
+        const mjml = await readFile(filePath)
+        const result = await mjml2html(mjml, filePath, mjmlPath)
+
+        const targetName = file.replace(/\.mjml$/, '.html')
+
+        await asyncJob(path.join(targetDir, targetName), result.html)
       }
     } else {
       const projSafeName = `${kebabCase(projBaseName)}.html`
@@ -227,7 +224,7 @@ async function massExport(state, asyncJob, allFiles = false) {
 export function exportSelectedProjectsToHTML() {
   return async (dispatch, getState) => {
     const targetPath = await massExport(getState(), (filePath, p) =>
-      fsWriteFile(filePath, p.get('html')),
+      writeFile(filePath, p.get('html')),
     )
     if (targetPath) {
       dispatch(saveLastExportedFolder(targetPath))
@@ -237,9 +234,10 @@ export function exportSelectedProjectsToHTML() {
 
 export function exportSelectedProjectsAllFilesToHTML() {
   return async (dispatch, getState) => {
-    const targetPath = await massExport(getState(), (filePath, html) =>
-      fsWriteFile(filePath, html, { flag: 'w' }),
-      true
+    const targetPath = await massExport(
+      getState(),
+      (filePath, html) => writeFile(filePath, html, { flag: 'w' }),
+      true,
     )
     if (targetPath) {
       dispatch(saveLastExportedFolder(targetPath))
@@ -251,22 +249,27 @@ export function exportSelectedProjectsToImages(done) {
   return async (dispatch, getState) => {
     const state = getState()
 
-    const targetPath = await massExport(state, async (filePath, p, targetDir) => {
-      const html = p.get('html')
-      const previewSize = state.settings.get('previewSize')
-      const [mobileWidth, desktopWidth] = [previewSize.get('mobile'), previewSize.get('desktop')]
-      const [mobileScreenshot, desktopScreenshot] = await Promise.all([
-        takeScreenshot(html, mobileWidth, targetDir),
-        takeScreenshot(html, desktopWidth, targetDir),
-      ])
-      await Promise.all([
-        fsWriteFile(`${filePath.replace(/.html$/, '')}_mobile.png`, mobileScreenshot),
-        fsWriteFile(`${filePath.replace(/.html$/, '')}_desktop.png`, desktopScreenshot),
-      ])
-    })
-    if (targetPath) {
-      dispatch(addAlert('Successfully exported to images', 'success'))
-      dispatch(saveLastExportedFolder(targetPath))
+    try {
+      const targetPath = await massExport(state, async (filePath, p, targetDir) => {
+        const html = p.get('html')
+        const previewSize = state.settings.get('previewSize')
+        const [mobileWidth, desktopWidth] = [previewSize.get('mobile'), previewSize.get('desktop')]
+        const [mobileScreenshot, desktopScreenshot] = await Promise.all([
+          api.screenshot.take(html, mobileWidth, targetDir),
+          api.screenshot.take(html, desktopWidth, targetDir),
+        ])
+        await api.screenshot.cleanUp(targetDir)
+        await Promise.all([
+          writeFile(`${filePath.replace(/.html$/, '')}_mobile.png`, mobileScreenshot),
+          writeFile(`${filePath.replace(/.html$/, '')}_desktop.png`, desktopScreenshot),
+        ])
+      })
+      if (targetPath) {
+        dispatch(addAlert('Successfully exported to images', 'success'))
+        dispatch(saveLastExportedFolder(targetPath))
+      }
+    } catch (err) {
+      dispatch(addAlert(err.message || 'Could not export to images', 'error'))
     }
     done()
   }
@@ -277,25 +280,20 @@ async function getDuplicatePath(projectPath, increment = 1) {
     throw new Error('Cant determine duplicate path')
   }
   const duplicatePath = `${projectPath} (${increment})`
-  try {
-    await fsStat(duplicatePath)
+  if (await fileExists(duplicatePath)) {
     return getDuplicatePath(projectPath, increment + 1)
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      return duplicatePath
-    }
-    throw err
   }
+  return duplicatePath
 }
 
 export function duplicateProject(projectPath) {
   return async dispatch => {
     try {
       const newProjectPath = await getDuplicatePath(projectPath)
-      await recursiveCopy(projectPath, newProjectPath)
+      await copyDir(projectPath, newProjectPath)
       dispatch(loadIfNeeded(newProjectPath))
     } catch (err) {
-      console.log(err) // eslint-disable-line
+      console.log(err)
     }
   }
 }
@@ -332,7 +330,7 @@ export function openExternalFile(filePath) {
       await waitUntilLoaded(getState)
       dispatch(openProject(dirName))
     } catch (err) {
-      console.log(err) // eslint-disable-line no-console
+      console.log(err)
     }
     dispatch(closeExternalFileOverlay())
   }

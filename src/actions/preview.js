@@ -1,8 +1,8 @@
-import path from 'path'
 import { createAction } from 'redux-actions'
 
+import { path } from 'helpers/api'
 import mjml2html from 'helpers/mjml'
-import { fsReadFile } from 'helpers/fs'
+import { readFile } from 'helpers/fs'
 import { updateProjectPreview } from 'actions/projects'
 
 const setPrev = createAction('SET_PREVIEW')
@@ -27,7 +27,7 @@ export function setPreview(fileName, content = '') {
     switch (ext) {
       case '.html':
         if (!content) {
-          content = await fsReadFile(fileName, { encoding: 'utf8' })
+          content = await readFile(fileName)
         }
         dispatch(setPrev({ type: 'html', content }))
         break
@@ -36,9 +36,9 @@ export function setPreview(fileName, content = '') {
       case '.gif':
         dispatch(setPrev({ type: 'image', content: fileName }))
         break
-      case '.mjml': // eslint-disable-line no-case-declarations
+      case '.mjml': {
         if (!content) {
-          content = await fsReadFile(fileName, { encoding: 'utf8' })
+          content = await readFile(fileName)
         }
         const renderOpts = {
           minify: settings.getIn(['mjml', 'minify']),
@@ -51,6 +51,7 @@ export function setPreview(fileName, content = '') {
           dispatch(updateProjectPreview(fName, html))
         }
         break
+      }
       default:
         dispatch(setPrev(null))
     }

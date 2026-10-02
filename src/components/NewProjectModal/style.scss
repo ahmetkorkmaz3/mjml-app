@@ -1,4 +1,4 @@
-@import '../../styles/vars.scss';
+@use '../../styles/vars.scss';
 
 .NewProjectModal {
   min-height: 0;
@@ -18,7 +18,7 @@
     color: white;
   }
   &.isActive {
-    border-bottom-color: $blue;
+    border-bottom-color: vars.$blue;
     background: rgba(black, 0.1);
     color: white;
   }
@@ -39,7 +39,7 @@
   transition: 150ms opacity;
   &:focus,
   &.isSelected {
-    border-color: $blue;
+    border-color: vars.$blue;
   }
   &.isSelected {
     opacity: 1;
@@ -62,7 +62,7 @@
   position: absolute;
   bottom: 0;
   left: 0;
-  background: $blue;
+  background: vars.$blue;
   color: white;
   padding: 5px;
 }

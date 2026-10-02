@@ -1,4 +1,4 @@
-@import '../../styles/vars.scss';
+@use '../../styles/vars.scss';
 
 .ExternalFileOverlay {
   position: fixed;
@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: $bg;
+  background: vars.$bg;
   z-index: 42;
   display: flex;
   align-items: center;

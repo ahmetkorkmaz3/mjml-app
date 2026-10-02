@@ -35,11 +35,11 @@ export default handleActions(
     },
 
     PROJECT_LOAD: (state, { payload: { path } }) =>
-      state.update('projects', p => {
-        if (p.find(p => p === path)) {
-          return state
+      state.update('projects', projects => {
+        if (projects.includes(path)) {
+          return projects
         }
-        return p.unshift(path)
+        return projects.unshift(path)
       }),
 
     PROJECT_REMOVE: (state, { payload: path }) =>

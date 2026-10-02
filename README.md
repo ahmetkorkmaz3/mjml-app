@@ -20,6 +20,8 @@ Visit the [website](http://mjmlio.github.io/mjml-app/) to download the version t
 
 ### Build from source
 
+You need Node.js 24 (see `.nvmrc`) and Yarn 1.
+
 ```bash
 # install dependencies
 yarn

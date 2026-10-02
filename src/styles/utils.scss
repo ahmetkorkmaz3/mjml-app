@@ -1,4 +1,4 @@
-@import './vars.scss';
+@use 'vars.scss';
 
 .d-f {
   display: flex;
@@ -199,13 +199,13 @@
 }
 
 .c-blue {
-  color: $blue !important;
+  color: vars.$blue !important;
 }
 .c-yellow {
-  color: $yellow !important;
+  color: vars.$yellow !important;
 }
 .c-red {
-  color: $red !important;
+  color: vars.$red !important;
 }
 .c-white {
   color: white !important;
@@ -226,10 +226,10 @@
 }
 
 .bg-dark {
-  background-color: $bg;
+  background-color: vars.$bg;
 }
 .bg-darker {
-  background-color: $bg-darker;
+  background-color: vars.$bg-darker;
 }
 
 .t-small {
@@ -292,14 +292,14 @@
   position: absolute;
   background: rgba(32, 32, 32, 0.9);
   padding: 8px;
-  margin-top:8px;
+  margin-top: 8px;
   line-height: 1.5;
   pointer-events: none;
   &.tooltip-up {
     &::before {
-      content: "";
+      content: '';
       position: absolute;
-      top:-8px;
+      top: -8px;
       display: block;
       width: 0;
       height: 0;
