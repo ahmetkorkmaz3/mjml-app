@@ -9,6 +9,10 @@ import './style.scss'
 const FOCUSABLE =
   'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
 
+// the first text field gets the focus when a dialog opens
+const AUTO_FOCUS =
+  '[autofocus], input[type="text"], input[type="email"], input[type="password"], input:not([type]), textarea'
+
 export default function Modal({
   isOpened,
   onClose,
@@ -39,7 +43,7 @@ export default function Modal({
 
   useEffect(() => {
     if (isOpened && isMounted && bodyRef.current) {
-      const first = bodyRef.current.querySelector('[autofocus], input, textarea, select')
+      const first = bodyRef.current.querySelector(AUTO_FOCUS)
       ;(first || bodyRef.current).focus()
     }
   }, [isOpened, isMounted])
