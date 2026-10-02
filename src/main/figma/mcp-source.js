@@ -11,6 +11,13 @@ const NAMED_ASSET_RE =
 const ASSET_URL_RE = /https?:\/\/(?:localhost|127\.0\.0\.1):\d+\/assets\/[^"'\s)`]+/g
 const LIMIT_RE = /\brate[ -]?limit|\bquota\b|\blimit(s|ed)?\b/i
 
+function limitError() {
+  return new ImportError(
+    'FIGMA_MCP_LIMIT',
+    'The Figma MCP server reached the limit of your plan. Use the REST API source instead.',
+  )
+}
+
 export async function connectMcp(url) {
   const client = new Client({ name: 'mjml-app', version: '1.0.0' })
   try {
@@ -55,14 +62,22 @@ function textOf(result) {
 }
 
 async function callTool(client, name, args, signal) {
-  const result = await client.callTool({ name, arguments: args }, undefined, { signal })
+  let result
+  try {
+    result = await client.callTool({ name, arguments: args }, undefined, { signal })
+  } catch (err) {
+    if (signal?.aborted || err instanceof ImportError) {
+      throw err
+    }
+    if (LIMIT_RE.test(err.message)) {
+      throw limitError()
+    }
+    throw new ImportError('FIGMA_ERROR', `Figma MCP: ${err.message}`)
+  }
   if (result.isError) {
     const message = textOf(result)
     if (LIMIT_RE.test(message)) {
-      throw new ImportError(
-        'FIGMA_MCP_LIMIT',
-        'The Figma MCP server reached the limit of your plan. Use the REST API source instead.',
-      )
+      throw limitError()
     }
     throw new ImportError('FIGMA_ERROR', `Figma MCP: ${message}`)
   }
@@ -128,6 +143,7 @@ export async function getDesignFromMcp({ nodeId, url, connect = connectMcp, sign
       name: metadata.name,
       width: metadata.width,
       screenshot: Buffer.from(image.data, 'base64'),
+      screenshotType: image.mimeType || 'image/png',
       context,
       variables,
       assets: findAssets(context),

@@ -14,6 +14,19 @@ function fakeSafeStorage(available = true) {
   }
 }
 
+describe('createSecretStore on Linux without a keyring', () => {
+  it('treats the basic_text backend as unavailable', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'mjml-secrets-'))
+    const safeStorage = { ...fakeSafeStorage(), getSelectedStorageBackend: () => 'basic_text' }
+    const store = createSecretStore({ filePath: join(dir, 'secrets.json'), safeStorage })
+    expect(store.isAvailable()).toBe(false)
+    await expect(store.set('ai.openai', 'k')).rejects.toMatchObject({
+      code: 'ENCRYPTION_UNAVAILABLE',
+    })
+    await rm(dir, { recursive: true, force: true })
+  })
+})
+
 describe('createSecretStore', () => {
   let dir
   let filePath

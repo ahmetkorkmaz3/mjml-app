@@ -60,6 +60,12 @@ describe('message builders', () => {
     })
   })
 
+  it('uses the media type of the Figma screenshot', () => {
+    const jpeg = { ...design, screenshotType: 'image/jpeg' }
+    const [message] = buildGenerateMessages({ design: jpeg, images })
+    expect(message.content[1].mediaType).toBe('image/jpeg')
+  })
+
   it('adds the screenshot to the refine message only when there is one', () => {
     const [withShot] = buildRefineMessages({
       content: '<mjml></mjml>',

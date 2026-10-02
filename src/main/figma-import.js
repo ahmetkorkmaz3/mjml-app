@@ -1,4 +1,4 @@
-import { writeFile } from 'node:fs/promises'
+import { access, writeFile } from 'node:fs/promises'
 import { basename, isAbsolute, join } from 'node:path'
 import { generateText } from 'ai'
 
@@ -11,7 +11,7 @@ import { getDesign, testFigmaConnection } from './figma'
 
 const FILE_NAME_RE = /^[\w.-]+\.mjml$/
 
-function checkFileName(projectPath, fileName) {
+async function checkFileName(projectPath, fileName) {
   if (
     !isAbsolute(String(projectPath)) ||
     basename(fileName) !== fileName ||
@@ -21,6 +21,14 @@ function checkFileName(projectPath, fileName) {
       'INVALID_FILE_NAME',
       'Use a file name with letters, numbers, "-", "_" or "." only.',
     )
+  }
+  // fail now, before any Figma or AI request. The wx flag at the write handles a race.
+  const exists = await access(join(projectPath, fileName)).then(
+    () => true,
+    () => false,
+  )
+  if (exists) {
+    throw new ImportError('FILE_EXISTS', `${fileName} already exists.`)
   }
 }
 
@@ -72,7 +80,7 @@ export function createFigmaImporter({ secrets, renderScreenshot, fetch = globalT
   function importDesign({ link, projectPath, fileName, ai, figma } = {}, onProgress) {
     return run(async signal => {
       onProgress({ step: 'parse' })
-      checkFileName(projectPath, fileName)
+      await checkFileName(projectPath, fileName)
       const model = await getModel(ai)
 
       onProgress({ step: 'figma' })

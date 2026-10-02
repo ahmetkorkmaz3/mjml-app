@@ -117,6 +117,21 @@ describe('generateMjml', () => {
     expect(promptText(calls[1])).toContain('The first image is the Figma design')
   })
 
+  it('keeps the first version when the visual check finds that images are refused', async () => {
+    const imageError = new APICallError({
+      message: 'This model does not support image input',
+      url: 'https://api.example.com',
+      requestBodyValues: {},
+      statusCode: 400,
+      isRetryable: false,
+    })
+    const { model } = mockModel([block(VALID), imageError, block(VALID_2)])
+    const renderScreenshot = async () => Buffer.from('render')
+    const res = await generateMjml({ ...base, model, visualCheck: true, renderScreenshot })
+    expect(res.mjml).toBe(VALID)
+    expect(res.warnings.join(' ')).toContain('does not accept images')
+  })
+
   it('keeps the first version when the visual check gives invalid MJML', async () => {
     const { model } = mockModel([block(VALID), block(INVALID)])
     const renderScreenshot = async () => Buffer.from('render')

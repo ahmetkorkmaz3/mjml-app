@@ -87,6 +87,35 @@ describe('getDesignFromMcp', () => {
     })
   })
 
+  it('maps a thrown limit error to FIGMA_MCP_LIMIT', async () => {
+    const client = fakeClient()
+    client.callTool.mockRejectedValue(new Error('HTTP 429: rate limit exceeded'))
+    await expect(
+      getDesignFromMcp({ nodeId: '1:2', url: 'x', connect: async () => client }),
+    ).rejects.toMatchObject({ code: 'FIGMA_MCP_LIMIT' })
+    expect(client.close).toHaveBeenCalled()
+  })
+
+  it('maps another thrown error to FIGMA_ERROR', async () => {
+    const client = fakeClient()
+    client.callTool.mockRejectedValue(new Error('socket hang up'))
+    await expect(
+      getDesignFromMcp({ nodeId: '1:2', url: 'x', connect: async () => client }),
+    ).rejects.toMatchObject({ code: 'FIGMA_ERROR' })
+  })
+
+  it('keeps the media type of the screenshot', async () => {
+    const client = fakeClient({
+      get_screenshot: {
+        content: [
+          { type: 'image', data: Buffer.from('j').toString('base64'), mimeType: 'image/jpeg' },
+        ],
+      },
+    })
+    const design = await getDesignFromMcp({ nodeId: '1:2', url: 'x', connect: async () => client })
+    expect(design.screenshotType).toBe('image/jpeg')
+  })
+
   it('maps a limit error to FIGMA_MCP_LIMIT', async () => {
     const client = fakeClient({
       get_design_context: {

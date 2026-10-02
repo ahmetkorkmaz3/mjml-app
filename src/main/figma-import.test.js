@@ -82,6 +82,8 @@ describe('createFigmaImporter', () => {
 
     expect(res.error.code).toBe('FILE_EXISTS')
     expect(await readFile(join(dir, 'news.mjml'), 'utf8')).toBe('mine')
+    expect(getDesign).not.toHaveBeenCalled()
+    expect(createModel).not.toHaveBeenCalled()
   })
 
   it('rejects a file name with a path', async () => {
