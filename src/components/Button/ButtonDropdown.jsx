@@ -78,8 +78,10 @@ class ButtonDropdown extends Component {
               >
                 <div className="ButtonDropdown--dropdown-item-icon">{action.icon}</div>
                 <div className="fg-1">
-                  <div className="ButtonDropdown--dropdown-item-title c-white">{action.label}</div>
-                  <div className="small mt-5">{action.desc}</div>
+                  <div className="ButtonDropdown--dropdown-item-title">{action.label}</div>
+                  {action.desc && (
+                    <div className="ButtonDropdown--dropdown-item-desc">{action.desc}</div>
+                  )}
                 </div>
               </Tabbable>
             ))}
