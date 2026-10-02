@@ -1,17 +1,15 @@
-import { Component } from 'react'
+import { Component, Fragment } from 'react'
 import { path as pathModule } from 'helpers/api'
 import { connect } from 'react-redux'
-import { FaCog, FaFolderOpen, FaFigma } from 'react-icons/fa'
 import {
-  MdContentCopy as IconCopy,
-  MdCode as IconCode,
-  MdCameraAlt as IconCamera,
-  MdEmail as IconEmail,
-  MdNoteAdd as IconAdd,
-  MdAutorenew as IconBeautify,
-  MdSave as IconSave,
-  MdBuild as IconBuild,
-  MdAutoAwesome as IconRefine,
+  MdChevronLeft as IconBack,
+  MdDesktopWindows as IconDesktop,
+  MdPhoneIphone as IconMobile,
+  MdSend as IconEmail,
+  MdIosShare as IconExport,
+  MdKeyboardArrowDown as IconDown,
+  MdMoreHoriz as IconMore,
+  MdSettings as IconSettings,
 } from 'react-icons/md'
 
 import { useSearchParams } from 'react-router'
@@ -22,25 +20,64 @@ import defaultMJML from 'data/defaultMJML'
 import { openModal } from 'reducers/modals'
 import { addAlert } from 'reducers/alerts'
 import { setPreview } from 'actions/preview'
+import { updateSettings } from 'actions/settings'
 
 import api from 'helpers/api'
 import { saveDialog, writeFile, fileExists } from 'helpers/fs'
+import { runCommand } from 'helpers/commands'
+import { showContextMenu } from 'helpers/contextMenu'
+import { formatShortcut } from 'helpers/shortcut'
 
 import Button from 'components/Button'
-import ButtonDropdown from 'components/Button/ButtonDropdown'
 import FilesList from 'components/FilesList'
 import TitleBar from 'components/TitleBar'
+import SegmentedControl from 'components/SegmentedControl'
 import PageCommands from 'components/PageCommands'
 import StatusBar from 'components/StatusBar'
 import router from 'router'
 
-import BackButton from './BackButton'
 import SendModal from './SendModal'
 import AddFileModal from './AddFileModal'
 import FigmaImportModal from './FigmaImportModal'
 import RefineModal from './RefineModal'
 import RemoveFileModal from './RemoveFileModal'
 import PreviewSettings from './PreviewSettings'
+
+import './style.scss'
+
+const shortcut = accelerator => formatShortcut(accelerator, api.platform)
+
+function Breadcrumb({ projectName, folders, fileName, isDirty, onNavigate }) {
+  return (
+    <div className="Breadcrumb">
+      <button
+        type="button"
+        className="Breadcrumb--item Breadcrumb--project"
+        title={projectName}
+        onClick={() => onNavigate(0)}
+      >
+        {projectName}
+      </button>
+      {folders.map((folder, i) => (
+        <Fragment key={i}>
+          <span className="Breadcrumb--sep">{'/'}</span>
+          <button type="button" className="Breadcrumb--item" onClick={() => onNavigate(i + 1)}>
+            {folder}
+          </button>
+        </Fragment>
+      ))}
+      {fileName && (
+        <>
+          <span className="Breadcrumb--sep">{'/'}</span>
+          <span className="Breadcrumb--file" title={fileName}>
+            {fileName}
+          </span>
+          {isDirty && <span className="Breadcrumb--dirty" aria-label="Unsaved changes" />}
+        </>
+      )}
+    </div>
+  )
+}
 
 const ConnectedProjectPage = connect(
   state => ({
@@ -49,11 +86,13 @@ const ConnectedProjectPage = connect(
     beautifyOutput: state.settings.getIn(['mjml', 'beautify']),
     checkForRelativePaths: state.settings.getIn(['mjml', 'checkForRelativePaths']),
     preventAutoSave: state.settings.getIn(['editor', 'preventAutoSave']),
+    isDirty: state.editorStatus.isDirty,
   }),
   {
     openModal,
     addAlert,
     setPreview,
+    updateSettings,
   },
 )(
   class ProjectPageContent extends Component {
@@ -96,8 +135,45 @@ const ConnectedProjectPage = connect(
       templating: () => this.handleOpenSettings(),
       'toggle-sidebar': () => {},
       'toggle-preview': () => {},
-      'preview-desktop': () => {},
-      'preview-mobile': () => {},
+      'preview-desktop': () => this.setPreviewSize('desktop'),
+      'preview-mobile': () => this.setPreviewSize('mobile'),
+    }
+
+    setPreviewSize = which => {
+      const size = this.props.previewSize.get(which)
+      this.props.updateSettings(s => s.setIn(['previewSize', 'current'], size))
+    }
+
+    handleExportMenu = async () => {
+      const id = await showContextMenu([
+        { id: 'copy-html', label: 'Copy HTML', accelerator: 'CmdOrCtrl+Shift+C' },
+        { id: 'export-html', label: 'Export HTML File…', accelerator: 'CmdOrCtrl+E' },
+        { type: 'separator' },
+        {
+          id: 'screenshots',
+          label: 'Save Screenshots (Mobile and Desktop)',
+          enabled: this.isMJMLFile(),
+        },
+      ])
+      if (id) runCommand(id)
+    }
+
+    handleMoreMenu = async () => {
+      const isMJML = this.isMJMLFile()
+      const id = await showContextMenu([
+        { id: 'beautify', label: 'Beautify', enabled: isMJML, accelerator: 'CmdOrCtrl+Shift+B' },
+        { id: 'refine', label: 'Refine with AI…', enabled: isMJML },
+        { type: 'separator' },
+        { id: 'import-figma', label: 'Import from Figma…' },
+        { id: 'templating', label: 'Templating…' },
+        { type: 'separator' },
+        {
+          id: 'reveal',
+          label: api.platform === 'darwin' ? 'Reveal in Finder' : 'Show in File Manager',
+        },
+      ])
+      if (id === 'reveal') this.handleOpenInBrowser()
+      else if (id) runCommand(id)
     }
 
     handleBeautify = () => this._editor.beautify()
@@ -248,15 +324,23 @@ const ConnectedProjectPage = connect(
     }
 
     render() {
-      const { preview, preventAutoSave } = this.props
+      const { preventAutoSave, previewSize, isDirty, rootPath } = this.props
       const { path, activeFile, showSettings } = this.state
 
-      const { rootPath } = this.props
       const projectName = pathModule.basename(rootPath)
       const isMJMLFile = activeFile && activeFile.name.endsWith('.mjml')
+      const hasPreview = this.hasHTMLPreview()
+      const folders = pathModule.relative(rootPath, path).split(pathModule.sep).filter(Boolean)
+      const currentSize = previewSize.get('current')
+      const sizeName =
+        currentSize === previewSize.get('desktop')
+          ? 'desktop'
+          : currentSize === previewSize.get('mobile')
+            ? 'mobile'
+            : null
 
       return (
-        <div className="fg-1 d-f fd-c o-n" tabIndex={0} ref={n => (this._page = n)}>
+        <div className="ProjectPage" tabIndex={-1} ref={n => (this._page = n)}>
           <PageCommands
             commands={this.commands}
             context={{
@@ -269,82 +353,86 @@ const ConnectedProjectPage = connect(
           <TitleBar
             left={
               <>
-                <BackButton projectName={projectName} />
-                <Button ghost onClick={this.openAddFileModal}>
-                  <IconAdd className="mr-5" />
-                  {'New file'}
+                <Button
+                  variant="ghost"
+                  icon
+                  link
+                  to="/"
+                  aria-label="Back to projects"
+                  data-tooltip={`Back to projects (${shortcut('CmdOrCtrl+W')})`}
+                >
+                  <IconBack size={20} />
                 </Button>
-                <Button ghost onClick={this.openFigmaImportModal}>
-                  <FaFigma className="mr-5" />
-                  {'Import from Figma'}
-                </Button>
+                <Breadcrumb
+                  projectName={projectName}
+                  folders={folders}
+                  fileName={activeFile && !activeFile.isFolder ? activeFile.name : null}
+                  isDirty={isDirty}
+                  onNavigate={depth =>
+                    this.handlePathChange(pathModule.join(rootPath, ...folders.slice(0, depth)))
+                  }
+                />
               </>
             }
             right={
               <>
-                {preventAutoSave && [
-                  <Button key="save" transparent onClick={() => this._editor.handleSave()}>
-                    <IconSave style={{ marginRight: 5 }} />
+                {preventAutoSave && (
+                  <Button
+                    variant={isDirty ? 'primary' : 'secondary'}
+                    data-tooltip={`Save (${shortcut('CmdOrCtrl+S')})`}
+                    onClick={() => this._editor && this._editor.handleSave()}
+                  >
                     {'Save'}
-                  </Button>,
-                ]}
-                {isMJMLFile && [
-                  <Button key="beautify" transparent onClick={this.handleBeautify}>
-                    <IconBeautify style={{ marginRight: 5 }} />
-                    {'Beautify'}
-                  </Button>,
-                  <Button key="refine" transparent onClick={this.openRefineModal}>
-                    <IconRefine style={{ marginRight: 5 }} />
-                    {'Refine with AI'}
-                  </Button>,
-                ]}
-                <Button transparent onClick={this.handleOpenSettings}>
-                  <IconBuild style={{ marginRight: 5 }} />
-                  {'Templating'}
-                </Button>
-                <Button transparent onClick={this.handleOpenInBrowser}>
-                  <FaFolderOpen style={{ marginRight: 5 }} />
-                  {'Open'}
-                </Button>
-                {preview &&
-                  preview.type === 'html' && [
-                    <Button key={'send'} transparent onClick={this.openSendModal}>
-                      <IconEmail style={{ marginRight: 5 }} />
-                      {'Send'}
-                    </Button>,
-                    <ButtonDropdown
-                      ghost
-                      key={'export'}
-                      dropdownWidth={300}
-                      actions={[
-                        {
-                          icon: <IconCopy />,
-                          label: 'Copy HTML',
-                          desc: 'Copy the result HTML to clipboard',
-                          onClick: this.handleCopyHTML,
-                        },
-                        {
-                          icon: <IconCode />,
-                          label: 'Export to HTML file',
-                          desc: 'Save the result HTML file to disk',
-                          onClick: this.handleExportToHTML,
-                        },
-                        {
-                          icon: <IconCamera />,
-                          label: 'Screenshot',
-                          desc: 'Save a screenshot of mobile & desktop result',
-                          onClick: this.handleScreenshot,
-                        },
-                      ]}
-                    />,
+                  </Button>
+                )}
+                <SegmentedControl
+                  disabled={!hasPreview}
+                  value={sizeName}
+                  onChange={this.setPreviewSize}
+                  options={[
+                    {
+                      value: 'desktop',
+                      icon: <IconDesktop size={14} />,
+                      tooltip: `Desktop preview (${shortcut('CmdOrCtrl+1')})`,
+                    },
+                    {
+                      value: 'mobile',
+                      icon: <IconMobile size={14} />,
+                      tooltip: `Mobile preview (${shortcut('CmdOrCtrl+2')})`,
+                    },
                   ]}
+                />
                 <Button
-                  className="ml-10"
-                  ghost
-                  onClick={this.openSettingsModal}
-                  ref={n => (this._btnSettings = n)}
+                  variant="ghost"
+                  disabled={!hasPreview}
+                  onClick={this.openSendModal}
+                  data-tooltip={`Send a test email (${shortcut('CmdOrCtrl+Shift+E')})`}
                 >
-                  <FaCog />
+                  <IconEmail size={15} />
+                  {'Send'}
+                </Button>
+                <Button variant="ghost" disabled={!hasPreview} onClick={this.handleExportMenu}>
+                  <IconExport size={15} />
+                  {'Export'}
+                  <IconDown size={14} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  icon
+                  aria-label="More actions"
+                  data-tooltip="More actions"
+                  onClick={this.handleMoreMenu}
+                >
+                  <IconMore size={18} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  icon
+                  aria-label="Settings"
+                  data-tooltip={`Settings (${shortcut('CmdOrCtrl+,')})`}
+                  onClick={this.openSettingsModal}
+                >
+                  <IconSettings size={16} />
                 </Button>
               </>
             }
