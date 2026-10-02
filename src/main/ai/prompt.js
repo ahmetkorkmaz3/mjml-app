@@ -60,14 +60,14 @@ export function buildDesignText(design, images) {
   ].join('\n')
 }
 
-function image(data) {
-  return { type: 'file', mediaType: 'image/png', data }
+function image(data, mediaType = 'image/png') {
+  return { type: 'file', mediaType, data }
 }
 
 export function buildGenerateMessages({ design, images }) {
   const content = [{ type: 'text', text: buildDesignText(design, images) }]
   if (design.screenshot) {
-    content.push(image(design.screenshot))
+    content.push(image(design.screenshot, design.screenshotType))
   }
   return [{ role: 'user', content }]
 }
@@ -93,7 +93,11 @@ export function buildVisualCheckMessages({ design, mjml, rendered }) {
   return [
     {
       role: 'user',
-      content: [{ type: 'text', text }, image(design.screenshot), image(rendered)],
+      content: [
+        { type: 'text', text },
+        image(design.screenshot, design.screenshotType),
+        image(rendered),
+      ],
     },
   ]
 }

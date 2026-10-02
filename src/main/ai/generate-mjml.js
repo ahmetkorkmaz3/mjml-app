@@ -133,10 +133,14 @@ export async function generateMjml({
       const rendered = await renderScreenshot(html, bodyWidth(design.width))
       const text = await session.call(buildVisualCheckMessages({ design, mjml, rendered }))
       const better = extractMjml(text)
-      if (better && (await validate(better)).errors.length === 0) {
-        mjml = better
-      } else {
-        warnings.push(VISUAL_CHECK_WARNING)
+      // a refusal of the images makes the session send text only. That reply
+      // has no comparison, so keep the first version.
+      if (session.acceptsImages()) {
+        if (better && (await validate(better)).errors.length === 0) {
+          mjml = better
+        } else {
+          warnings.push(VISUAL_CHECK_WARNING)
+        }
       }
     } catch (err) {
       if (signal?.aborted) {

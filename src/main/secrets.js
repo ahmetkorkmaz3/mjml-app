@@ -42,14 +42,19 @@ export function createSecretStore({ filePath, safeStorage }) {
     }
   }
 
+  // on Linux without a keyring Electron falls back to a fixed key (basic_text)
+  const isAvailable = () =>
+    safeStorage.isEncryptionAvailable() &&
+    safeStorage.getSelectedStorageBackend?.() !== 'basic_text'
+
   return {
-    isAvailable: () => safeStorage.isEncryptionAvailable(),
+    isAvailable,
 
     async set(name, value) {
       const run = writeQueue.then(async () => {
         const data = await load()
         if (value) {
-          if (!safeStorage.isEncryptionAvailable()) {
+          if (!isAvailable()) {
             throw new ImportError(
               'ENCRYPTION_UNAVAILABLE',
               'The system keychain is not available, so the app cannot save the key.',
