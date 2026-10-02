@@ -58,6 +58,16 @@ export function loadSettings() {
         mobile: 320,
         desktop: 650,
       },
+      ai: {
+        provider: 'anthropic',
+        model: '',
+        baseURL: '',
+        visualCheck: true,
+      },
+      figma: {
+        source: 'mcp',
+        mcpURL: 'http://127.0.0.1:3845/mcp',
+      },
       snippets: [],
       templating: [],
     })

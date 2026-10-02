@@ -14,6 +14,8 @@ export default handleActions(
         api: Map(payload.api),
         mjml: Map(payload.mjml),
         previewSize: Map(payload.previewSize),
+        ai: Map(payload.ai),
+        figma: Map(payload.figma),
         snippets: List(payload.snippets),
         templating: payload.templating,
       })

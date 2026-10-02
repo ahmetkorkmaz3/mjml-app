@@ -14,11 +14,18 @@
     "lint": "eslint .",
     "prettier": "prettier --write .",
     "prettier:check": "prettier --check .",
+    "test": "vitest run",
     "site": "vite --config site/vite.config.mjs",
     "build:site": "vite build --config site/vite.config.mjs",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4",
+    "@ai-sdk/google": "^4",
+    "@ai-sdk/openai": "^4",
+    "@ai-sdk/openai-compatible": "^3",
+    "@modelcontextprotocol/sdk": "^1",
+    "ai": "^7",
     "electron-json-storage": "^4.6.0",
     "electron-updater": "^6.8.9",
     "erb": "^1.3.3",
@@ -72,7 +79,8 @@
     "redux-actions": "^3.0.3",
     "redux-logger": "^3.0.6",
     "sass": "^1.105.1",
-    "vite": "^7"
+    "vite": "^7",
+    "vitest": "^5"
   },
   "authors": [
     {

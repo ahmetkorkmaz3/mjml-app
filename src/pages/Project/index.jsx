@@ -1,7 +1,7 @@
 import { Component } from 'react'
 import { path as pathModule } from 'helpers/api'
 import { connect } from 'react-redux'
-import { FaCog, FaFolderOpen } from 'react-icons/fa'
+import { FaCog, FaFolderOpen, FaFigma } from 'react-icons/fa'
 import {
   MdContentCopy as IconCopy,
   MdCode as IconCode,
@@ -11,6 +11,7 @@ import {
   MdAutorenew as IconBeautify,
   MdSave as IconSave,
   MdBuild as IconBuild,
+  MdAutoAwesome as IconRefine,
 } from 'react-icons/md'
 
 import { useSearchParams } from 'react-router'
@@ -32,6 +33,8 @@ import FilesList from 'components/FilesList'
 import BackButton from './BackButton'
 import SendModal from './SendModal'
 import AddFileModal from './AddFileModal'
+import FigmaImportModal from './FigmaImportModal'
+import RefineModal from './RefineModal'
 import RemoveFileModal from './RemoveFileModal'
 import PreviewSettings from './PreviewSettings'
 
@@ -167,6 +170,23 @@ const ConnectedProjectPage = connect(
 
     openAddFileModal = () => this.props.openModal('addFile')
 
+    openFigmaImportModal = () => this.props.openModal('figmaImport')
+
+    openRefineModal = () => this.props.openModal('refine')
+
+    handleFigmaImported = ({ filePath, warnings, usage }) => {
+      const { addAlert } = this.props
+      this._filelist.refresh()
+      this.setState({ activeFile: { isFolder: false, name: pathModule.basename(filePath) } })
+      addAlert(
+        `Done: ${usage.inputTokens} input tokens, ${usage.outputTokens} output tokens, ${usage.calls} model calls`,
+        'success',
+      )
+      if (warnings.length) {
+        addAlert(['Import warnings:', ...warnings.map(w => `■ ${w}`)], 'info', { autoHide: false })
+      }
+    }
+
     handleOpenSettings = () => this.setState({ showSettings: true })
     handleCloseSettings = () => this.setState({ showSettings: false })
 
@@ -211,6 +231,10 @@ const ConnectedProjectPage = connect(
                 <IconAdd className="mr-5" />
                 {'New file'}
               </Button>
+              <Button ghost onClick={this.openFigmaImportModal}>
+                <FaFigma className="mr-5" />
+                {'Import from Figma'}
+              </Button>
             </div>
             <div className="d-f flow-h-10">
               {preventAutoSave && [
@@ -223,6 +247,10 @@ const ConnectedProjectPage = connect(
                 <Button key="beautify" transparent onClick={this.handleBeautify}>
                   <IconBeautify style={{ marginRight: 5 }} />
                   {'Beautify'}
+                </Button>,
+                <Button key="refine" transparent onClick={this.openRefineModal}>
+                  <IconRefine style={{ marginRight: 5 }} />
+                  {'Refine with AI'}
                 </Button>,
               ]}
               <Button transparent onClick={this.handleOpenSettings}>
@@ -295,6 +323,11 @@ const ConnectedProjectPage = connect(
 
           <SendModal currentProjectPath={path} />
           <AddFileModal rootPath={path} onAdd={this.handleAddFile} />
+          <FigmaImportModal rootPath={path} onImported={this.handleFigmaImported} />
+          <RefineModal
+            filePath={isMJMLFile ? pathModule.join(path, activeFile.name) : null}
+            getEditor={() => this._editor}
+          />
           <RemoveFileModal rootPath={path} onRemove={this.handleRemoveFile} />
           <PreviewSettings
             currentProjectPath={path}
