@@ -1,0 +1,41 @@
+.StatusBar {
+  flex-shrink: 0;
+  height: var(--statusbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-2);
+  border-top: 1px solid var(--separator);
+  background: var(--bg-window);
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+}
+
+.StatusBar--group {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.StatusBar--item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+button.StatusBar--item:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.StatusBar--ok svg {
+  color: var(--success);
+}
+
+.StatusBar--errors {
+  color: var(--danger);
+}
