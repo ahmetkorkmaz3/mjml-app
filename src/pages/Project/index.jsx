@@ -24,6 +24,7 @@ import { updateSettings } from 'actions/settings'
 
 import api from 'helpers/api'
 import { saveDialog, writeFile, fileExists } from 'helpers/fs'
+import { exportHTML, exportMessage } from 'helpers/export-html'
 import { runCommand } from 'helpers/commands'
 import { showContextMenu } from 'helpers/contextMenu'
 import { formatShortcut } from 'helpers/shortcut'
@@ -241,10 +242,20 @@ const ConnectedProjectPage = connect(
 
       const { addAlert } = this.props
 
-      const htmlContent = this.getHTMLOutput()
-
-      await writeFile(p, htmlContent)
-      addAlert('Successfully exported HTML', 'success')
+      let result
+      try {
+        result = await exportHTML(this.getHTMLOutput(), this.state.path, p)
+      } catch (err) {
+        addAlert(`Could not export the HTML: ${err.message}`, 'error')
+        return
+      }
+      addAlert(
+        exportMessage('Exported the HTML', result),
+        result.missing.length ? 'info' : 'success',
+        {
+          autoHide: !result.missing.length,
+        },
+      )
       this._filelist.refresh()
     }
 

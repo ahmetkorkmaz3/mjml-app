@@ -2,6 +2,7 @@ import kebabCase from 'lodash/kebabCase'
 
 import api, { path } from 'helpers/api'
 import mjml2html from 'helpers/mjml'
+import { exportHTML, exportMessage } from 'helpers/export-html'
 import router from 'router'
 
 import { addAlert } from 'reducers/alerts'
@@ -190,12 +191,15 @@ export function dropFile(filePath) {
 async function massExport(state, asyncJob, allFiles = false) {
   const projectsToExport = state.projects
     .filter(p => state.selectedProjects.find(path => path === p.get('path')))
-    .filter(p => p.get('html'))
+    // "all files" renders each file again, the other exports use the index preview
+    .filter(p => allFiles || p.get('html'))
 
   if (projectsToExport.size === 0) {
-    return
+    throw new Error('The selected projects have no MJML file to export')
   }
   const targetPath = await fileDialog({
+    title: 'Choose the export folder',
+    buttonLabel: 'Export',
     defaultPath: state.settings.get('lastExportedFolder') || HOME_DIR,
     properties: ['openDirectory', 'createDirectory'],
   })
@@ -224,7 +228,7 @@ async function massExport(state, asyncJob, allFiles = false) {
 
         const targetName = file.replace(/\.mjml$/, '.html')
 
-        await asyncJob(path.join(targetDir, targetName), result.html)
+        await asyncJob(path.join(targetDir, targetName), result.html, projPath)
       }
     } else {
       const projSafeName = `${kebabCase(projBaseName)}.html`
@@ -235,28 +239,43 @@ async function massExport(state, asyncJob, allFiles = false) {
   return targetPath
 }
 
-export function exportSelectedProjectsToHTML() {
+// exports the HTML files and copies the local files that they use
+function massExportHTML(allFiles) {
   return async (dispatch, getState) => {
-    const targetPath = await massExport(getState(), (filePath, p) =>
-      writeFile(filePath, p.get('html')),
-    )
-    if (targetPath) {
-      dispatch(saveLastExportedFolder(targetPath))
+    const total = { copied: 0, missing: [] }
+    const job = async (filePath, html, projPath) => {
+      const { copied, missing } = await exportHTML(html, projPath, filePath)
+      total.copied += copied
+      total.missing.push(...missing)
+    }
+    try {
+      const targetPath = await massExport(
+        getState(),
+        allFiles ? job : (filePath, p) => job(filePath, p.get('html'), p.get('path')),
+        allFiles,
+      )
+      if (targetPath) {
+        dispatch(
+          addAlert(
+            exportMessage('Exported the HTML', total),
+            total.missing.length ? 'info' : 'success',
+            { autoHide: !total.missing.length },
+          ),
+        )
+        dispatch(saveLastExportedFolder(targetPath))
+      }
+    } catch (err) {
+      dispatch(addAlert(`Could not export the HTML: ${err.message}`, 'error'))
     }
   }
 }
 
+export function exportSelectedProjectsToHTML() {
+  return massExportHTML(false)
+}
+
 export function exportSelectedProjectsAllFilesToHTML() {
-  return async (dispatch, getState) => {
-    const targetPath = await massExport(
-      getState(),
-      (filePath, html) => writeFile(filePath, html, { flag: 'w' }),
-      true,
-    )
-    if (targetPath) {
-      dispatch(saveLastExportedFolder(targetPath))
-    }
-  }
+  return massExportHTML(true)
 }
 
 export function exportSelectedProjectsToImages(done) {
@@ -264,15 +283,17 @@ export function exportSelectedProjectsToImages(done) {
     const state = getState()
 
     try {
-      const targetPath = await massExport(state, async (filePath, p, targetDir) => {
+      const targetPath = await massExport(state, async (filePath, p) => {
         const html = p.get('html')
+        // the screenshot loads the HTML from the project, so the relative images resolve
+        const projPath = p.get('path')
         const previewSize = state.settings.get('previewSize')
         const [mobileWidth, desktopWidth] = [previewSize.get('mobile'), previewSize.get('desktop')]
         const [mobileScreenshot, desktopScreenshot] = await Promise.all([
-          api.screenshot.take(html, mobileWidth, targetDir),
-          api.screenshot.take(html, desktopWidth, targetDir),
+          api.screenshot.take(html, mobileWidth, projPath),
+          api.screenshot.take(html, desktopWidth, projPath),
         ])
-        await api.screenshot.cleanUp(targetDir)
+        await api.screenshot.cleanUp(projPath)
         await Promise.all([
           writeFile(`${filePath.replace(/.html$/, '')}_mobile.png`, mobileScreenshot),
           writeFile(`${filePath.replace(/.html$/, '')}_desktop.png`, desktopScreenshot),
