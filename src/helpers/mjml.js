@@ -2,6 +2,7 @@ import get from 'lodash/get'
 
 import api from 'helpers/api'
 
+// options: minify, rootPath (the project folder, for mj-include)
 export default function mjml2html(mjmlContent, filePath, mjmlPath = null, options = {}) {
   return new Promise(resolve => {
     window.requestIdleCallback(async () => {
@@ -15,11 +16,12 @@ export default function mjml2html(mjmlContent, filePath, mjmlPath = null, option
           useMjmlConfig: get(settings, 'mjml.useMjmlConfig', false),
           mjmlConfigPath: get(settings, 'mjml.mjmlConfigPath'),
           preventAutoSave: get(settings, 'editor.preventAutoSave', false),
+          rootPath: options.rootPath,
         })
 
         resolve(res)
       } catch (e) {
-        resolve({ html: '', errors: [] })
+        resolve({ html: '', errors: [{ line: null, message: e.message || String(e) }] })
       }
     })
   })

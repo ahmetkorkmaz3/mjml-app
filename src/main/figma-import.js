@@ -117,7 +117,7 @@ export function createFigmaImporter({ secrets, renderScreenshot, fetch = globalT
         design: { ...design, context },
         images,
         // the file does not exist yet and mjml needs an existing path: use the folder
-        validate: content => validateMjml(content, projectPath),
+        validate: content => validateMjml(content, projectPath, projectPath),
         renderScreenshot: (html, width) => renderScreenshot(html, width, projectPath),
         visualCheck: ai.visualCheck !== false,
         signal,
@@ -143,7 +143,7 @@ export function createFigmaImporter({ secrets, renderScreenshot, fetch = globalT
     })
   }
 
-  function refine({ filePath, content, instruction, ai } = {}, onProgress) {
+  function refine({ filePath, rootPath, content, instruction, ai } = {}, onProgress) {
     return run(async signal => {
       const model = await getModel(ai)
       const result = await refineMjml({
@@ -151,7 +151,7 @@ export function createFigmaImporter({ secrets, renderScreenshot, fetch = globalT
         content,
         instruction,
         screenshot: screenshots.get(filePath),
-        validate: value => validateMjml(value, filePath),
+        validate: value => validateMjml(value, filePath, rootPath),
         signal,
         onProgress,
       })

@@ -39,10 +39,14 @@ import { path } from 'helpers/api'
 
 import './styles.scss'
 
-function beautify(content) {
+// uses the indent settings of the editor
+function beautify(content, { useTab, indentSize }) {
+  const size = useTab ? 1 : indentSize
   return beautifyJS.html(content, {
-    indent_size: 2,
-    wrap_attributes_indent_size: 2,
+    indent_size: size,
+    indent_char: useTab ? '\t' : ' ',
+    indent_with_tabs: !!useTab,
+    wrap_attributes_indent_size: size,
     max_preserve_newline: 0,
     preserve_newlines: false,
   })
@@ -53,7 +57,11 @@ export default connect(
     const { settings, preview } = state
     return {
       mjmlEngine: settings.getIn(['mjml', 'engine'], 'auto'),
+      mjmlPath: settings.getIn(['mjml', 'path']),
       minify: settings.getIn(['mjml', 'minify'], false),
+      keepComments: settings.getIn(['mjml', 'keepComments'], true),
+      useMjmlConfig: settings.getIn(['mjml', 'useMjmlConfig'], false),
+      mjmlConfigPath: settings.getIn(['mjml', 'mjmlConfigPath']),
       wrapLines: settings.getIn(['editor', 'wrapLines'], true),
       autoFold: settings.getIn(['editor', 'autoFold']),
       foldLevel: settings.getIn(['editor', 'foldLevel']),
@@ -81,12 +89,17 @@ export default connect(
       isLoading: true,
     }
 
-    // used to store the editor state (with its history) of each file, for
-    // ability to restore it when switching to another file then switching back
-    _stateCache = {}
+    // `states`: the editor state (with its history) of each file, to restore
+    // it when the user comes back to the file. It keeps the unsaved changes
+    // when auto-save is off. `lastWritten`: the last content on the disk, for
+    // each file. The files list gives the cache, so it stays while the project
+    // is open (the editor unmounts when a folder or an image is selected).
+    _cache = this.props.cache || { states: {}, lastWritten: {}, pendingWrites: {} }
+    _stateCache = this._cache.states
+    _lastWritten = this._cache.lastWritten
 
-    // the last content written on the disk, for each file
-    _lastWritten = {}
+    // the writes in progress, for each file
+    _pendingWrites = this._cache.pendingWrites
 
     // the file of the content that is in the editor (it can be different
     // from the `fileName` prop while the new file loads)
@@ -110,15 +123,18 @@ export default connect(
 
     componentDidUpdate(prevProps) {
       if (prevProps.fileName !== this.props.fileName) {
-        // backup state (content, history, selection)
-        if (this._view) {
-          this._stateCache[prevProps.fileName] = this._view.state
-        }
+        this.leaveFile()
         this.loadContent()
       }
+      // the settings that change the output: render again
       if (
         prevProps.mjmlEngine !== this.props.mjmlEngine ||
-        prevProps.minify !== this.props.minify
+        prevProps.mjmlPath !== this.props.mjmlPath ||
+        prevProps.minify !== this.props.minify ||
+        prevProps.keepComments !== this.props.keepComments ||
+        prevProps.useMjmlConfig !== this.props.useMjmlConfig ||
+        prevProps.mjmlConfigPath !== this.props.mjmlConfigPath ||
+        prevProps.preventAutoSave !== this.props.preventAutoSave
       ) {
         this.handleChange()
       }
@@ -150,12 +166,28 @@ export default connect(
     componentWillUnmount() {
       cancelAnimationFrame(this._cursorFrame)
       this.props.resetEditorStatus()
-      this.handleChange.cancel()
-      this.debounceWrite.flush()
+      this.leaveFile()
       if (this._view) {
         this._view.destroy()
         this._view = null
       }
+    }
+
+    // Keeps the state of the file that leaves the editor and writes its last
+    // change now: the debounced functions would use the next file.
+    leaveFile() {
+      const fileName = this._contentFileName
+      this.handleChange.cancel()
+      if (!this._view || !fileName) {
+        return
+      }
+      this._stateCache[fileName] = this._view.state
+      if (!this.props.preventAutoSave) {
+        this.debounceWrite(fileName, this.getContent())
+      }
+      this.debounceWrite.flush()
+      // no change goes to this file until the next file is loaded
+      this._contentFileName = null
     }
 
     detectOldSyntax = () => {
@@ -255,6 +287,8 @@ export default connect(
       }
 
       try {
+        // a write of the file can still run (the file was left just before)
+        await Promise.resolve(this._pendingWrites[fileName]).catch(() => {})
         const content = await readFile(fileName)
         // the file changed during the read
         if (!this._view || fileName !== this.props.fileName) {
@@ -263,8 +297,14 @@ export default connect(
 
         // load the previous state of the file if it exists, else, start a new one
         const cached = this._stateCache[fileName]
+        const cachedDoc = cached && cached.doc.toString()
+        // the unsaved changes stay while the file on the disk does not change
+        const hasUnsavedChanges =
+          !!cached &&
+          cachedDoc !== this._lastWritten[fileName] &&
+          this._lastWritten[fileName] === content
         this._isSettingContent = true
-        if (cached && cached.doc.toString() === content) {
+        if (cached && (cachedDoc === content || hasUnsavedChanges)) {
           this._view.setState(cached)
           this.reconfigure()
         } else {
@@ -286,6 +326,10 @@ export default connect(
         this.handleChange()
       } catch (e) {
         this._isSettingContent = false
+        if (fileName === this.props.fileName) {
+          this.setState({ isLoading: false })
+          this.props.addAlert(`Could not open ${path.basename(fileName)}`, 'error')
+        }
       }
     }
 
@@ -309,6 +353,9 @@ export default connect(
     async handleSave() {
       const { addAlert } = this.props
       const fileName = this._contentFileName
+      if (!this._view || !fileName) {
+        return
+      }
       const mjml = this.getContent()
 
       try {
@@ -328,18 +375,23 @@ export default connect(
       if (!this._view || !fileName) {
         return
       }
-      const { setPreview, mjmlEngine, preventAutoSave } = this.props
+      const { setPreview, mjmlEngine, preventAutoSave, rootPath } = this.props
       const mjml = this.getContent()
       if (mjmlEngine === 'auto') {
-        setPreview(fileName, mjml)
+        setPreview(fileName, mjml, { rootPath })
 
         if (!preventAutoSave) this.debounceWrite(fileName, mjml)
       } else {
+        // the local binary reads the saved file
         if (!preventAutoSave) {
-          await this.write(fileName, mjml)
+          try {
+            await this.write(fileName, mjml)
+          } catch (err) {
+            this.handleWriteError(fileName, err)
+          }
         }
 
-        setPreview(fileName, mjml)
+        setPreview(fileName, mjml, { rootPath })
       }
 
       this.updateDirty()
@@ -401,7 +453,7 @@ export default connect(
 
     beautify = () => {
       const value = this.getContent()
-      const beautified = beautify(value)
+      const beautified = beautify(value, this.props)
       this.setContent(beautified)
     }
 
@@ -409,7 +461,7 @@ export default connect(
       try {
         const content = this.getContent()
         const migratedContent = await migrateToMJML4(content)
-        const beautified = beautify(migratedContent)
+        const beautified = beautify(migratedContent, this.props)
         this.setContent(beautified)
       } catch (err) {
         console.error(err)
@@ -421,7 +473,15 @@ export default connect(
       if (mjml === this._lastWritten[fileName]) {
         return
       }
-      await writeFile(fileName, mjml)
+      const writing = writeFile(fileName, mjml)
+      this._pendingWrites[fileName] = writing
+      try {
+        await writing
+      } finally {
+        if (this._pendingWrites[fileName] === writing) {
+          delete this._pendingWrites[fileName]
+        }
+      }
       this._lastWritten[fileName] = mjml
       this.updateDirty()
       this.handleWritten(fileName)
@@ -434,8 +494,12 @@ export default connect(
       }
     }
 
+    handleWriteError(fileName, err) {
+      this.props.addAlert(`Could not save ${path.basename(fileName)}: ${err.message}`, 'error')
+    }
+
     debounceWrite = debounce((fileName, mjml) => {
-      this.write(fileName, mjml)
+      this.write(fileName, mjml).catch(err => this.handleWriteError(fileName, err))
     }, 500)
 
     refresh = () => {

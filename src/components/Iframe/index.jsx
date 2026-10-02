@@ -1,6 +1,7 @@
 import { Component } from 'react'
 
 import api from 'helpers/api'
+import { resolveFileURL, rewriteCssUrls } from 'helpers/file-url'
 
 class Iframe extends Component {
   static defaultProps = {
@@ -44,13 +45,20 @@ class Iframe extends Component {
         })
       }
 
+      // the relative paths of the local files are relative to the folder
       if (base) {
-        const images = [...documentElement.querySelectorAll('img')]
-        images.forEach(img => {
-          const imgSrc = img.getAttribute('src')
-          if (imgSrc && !/^(https?:|data:|file:|\/\/)/.test(imgSrc)) {
-            img.setAttribute('src', `file://${base}/${imgSrc}`)
-          }
+        documentElement.querySelectorAll('img[src]').forEach(img => {
+          const url = resolveFileURL(base, img.getAttribute('src'))
+          if (url) img.setAttribute('src', url)
+        })
+        documentElement.querySelectorAll('[background]').forEach(node => {
+          const url = resolveFileURL(base, node.getAttribute('background'))
+          if (url) node.setAttribute('background', url)
+        })
+        documentElement.querySelectorAll('[style*="url("]').forEach(node => {
+          const style = node.getAttribute('style')
+          const rewritten = rewriteCssUrls(style, base)
+          if (rewritten !== style) node.setAttribute('style', rewritten)
         })
       }
     })

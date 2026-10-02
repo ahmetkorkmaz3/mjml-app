@@ -1,6 +1,7 @@
 import { Component, Fragment } from 'react'
 import { path as pathModule } from 'helpers/api'
 import { connect } from 'react-redux'
+import find from 'lodash/find'
 import {
   MdChevronLeft as IconBack,
   MdDesktopWindows as IconDesktop,
@@ -24,6 +25,7 @@ import { updateSettings } from 'actions/settings'
 
 import api from 'helpers/api'
 import { saveDialog, writeFile, fileExists } from 'helpers/fs'
+import { compile } from 'helpers/preview-content'
 import { exportHTML, exportMessage } from 'helpers/export-html'
 import { runCommand } from 'helpers/commands'
 import { showContextMenu } from 'helpers/contextMenu'
@@ -89,6 +91,7 @@ const ConnectedProjectPage = connect(
     preventAutoSave: state.settings.getIn(['editor', 'preventAutoSave']),
     isDirty: state.editorStatus.isDirty,
     layout: state.settings.get('layout'),
+    templating: state.settings.get('templating'),
   }),
   {
     openModal,
@@ -192,6 +195,10 @@ const ConnectedProjectPage = connect(
         return
       }
       this._filelist.refresh()
+      // open the new file (the dialog creates it in the open folder)
+      if (pathModule.dirname(fileName) === this.state.path) {
+        this.setState({ activeFile: { isFolder: false, name: pathModule.basename(fileName) } })
+      }
     }
 
     handleRemoveFile = async fileName => {
@@ -260,27 +267,37 @@ const ConnectedProjectPage = connect(
     }
 
     handleScreenshot = async () => {
-      const { preview, previewSize, addAlert, rootPath } = this.props
+      const { preview, previewSize, addAlert, templating } = this.props
+      // the screenshots go next to the file, in the open folder
+      const folder = this.state.path
 
       const filename = pathModule.basename(this.state.activeFile.name, '.mjml')
 
       const [mobileWidth, desktopWidth] = [previewSize.get('mobile'), previewSize.get('desktop')]
 
       try {
-        const [mobileScreenshot, desktopScreenshot] = await Promise.all([
-          api.screenshot.take(preview.content, mobileWidth, this.state.path),
-          api.screenshot.take(preview.content, desktopWidth, this.state.path),
-        ])
+        // the same HTML as the preview, with the templating variables
+        const projectTemplating = find(templating, { projectPath: folder }) || {}
+        const html = await compile({
+          raw: preview.content,
+          engine: projectTemplating.engine,
+          variables: projectTemplating.variables,
+        })
 
-        await api.screenshot.cleanUp(this.state.path)
+        const [mobileScreenshot, desktopScreenshot] = await Promise.all([
+          api.screenshot.take(html, mobileWidth, folder),
+          api.screenshot.take(html, desktopWidth, folder),
+        ])
 
         await Promise.all([
-          writeFile(pathModule.join(rootPath, `${filename}-mobile.png`), mobileScreenshot),
-          writeFile(pathModule.join(rootPath, `${filename}-desktop.png`), desktopScreenshot),
+          writeFile(pathModule.join(folder, `${filename}-mobile.png`), mobileScreenshot),
+          writeFile(pathModule.join(folder, `${filename}-desktop.png`), desktopScreenshot),
         ])
       } catch (err) {
-        addAlert('Could not take the screenshots', 'error')
+        addAlert(`Could not take the screenshots: ${err.message}`, 'error')
         return
+      } finally {
+        await api.screenshot.cleanUp(folder)
       }
 
       addAlert('Successfully saved mobile and desktop screenshots', 'success')
@@ -463,7 +480,6 @@ const ConnectedProjectPage = connect(
               activeFile={activeFile}
               onActiveFileChange={this.handleActiveFileChange}
               onPathChange={this.handlePathChange}
-              onAddFile={this.handleAddFile}
               onRemoveFile={this.handleRemoveFile}
               onNewFile={this.openAddFileModal}
               onImportFigma={this.openFigmaImportModal}
@@ -485,6 +501,7 @@ const ConnectedProjectPage = connect(
           <FigmaImportModal rootPath={path} onImported={this.handleFigmaImported} />
           <RefineModal
             filePath={isMJMLFile ? pathModule.join(path, activeFile.name) : null}
+            rootPath={rootPath}
             getEditor={() => this._editor}
           />
           <RemoveFileModal rootPath={path} onRemove={this.handleRemoveFile} />

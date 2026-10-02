@@ -20,11 +20,10 @@ import MailjetInfos from 'components/MailjetInfos'
 import Modal from 'components/Modal'
 import Button from 'components/Button'
 
+// the Mailjet keys are secrets of the main process (see MailjetInfos)
 function getAPIState(props) {
   return {
     Subject: props.Subject,
-    APIKey: props.APIKey,
-    APISecret: props.APISecret,
     SenderName: props.SenderName,
     SenderEmail: props.SenderEmail,
     TargetEmails: props.TargetEmails,
@@ -42,8 +41,6 @@ export default connect(
     return {
       content: get(state, 'preview.content', ''),
       isOpened: isModalOpened(state, 'send'),
-      APIKey: state.settings.getIn(['api', 'APIKey'], ''),
-      APISecret: state.settings.getIn(['api', 'APISecret'], ''),
       Subject,
       SenderName,
       SenderEmail,
@@ -65,6 +62,9 @@ export default connect(
   class SendModal extends Component {
     state = {
       emails: this.props.emails,
+      // the API key and the API secret are saved
+      hasKeys: false,
+      isSending: false,
       ...getAPIState(this.props),
     }
 
@@ -74,6 +74,8 @@ export default connect(
         this.setState(getAPIState(this.props))
       }
     }
+
+    handleKeysChange = hasKeys => this.setState({ hasKeys })
 
     handleClose = () => this.props.closeModal('send')
 
@@ -103,7 +105,12 @@ export default connect(
       e.preventDefault()
 
       const { addAlert, content: raw, templating, currentProjectPath } = this.props
-      const { Subject, APIKey, APISecret, SenderName, SenderEmail, TargetEmails } = this.state
+      const { Subject, SenderName, SenderEmail, TargetEmails } = this.state
+      // the state changes after the render, so a double click needs this flag
+      if (this._sending || !this.isValid()) {
+        return
+      }
+      this.setSending(true)
       const projectTemplating = find(templating, { projectPath: currentProjectPath }) || {}
 
       let content
@@ -115,25 +122,35 @@ export default connect(
           variables: projectTemplating.variables,
         })
       } catch (err) {
+        this.setSending(false)
         this.props.addAlert(`[Template Compiler Error] ${err.message}`, 'error')
         return
       }
 
+      let res
       try {
-        await api.sendEmail({
-          content,
-          Subject,
-          APIKey,
-          APISecret,
-          SenderName,
-          SenderEmail,
-          TargetEmails,
-        })
-        window.requestIdleCallback(() => addAlert('Mail has been sent', 'success'))
-        window.requestIdleCallback(this.handleClose)
+        res = await api.sendEmail({ content, Subject, SenderName, SenderEmail, TargetEmails })
       } catch (err) {
-        addAlert('Something went wrong', 'error')
+        res = { error: { message: err.message } }
       }
+      this.setSending(false)
+
+      if (res && res.error) {
+        addAlert(`Could not send the email: ${res.error.message}`, 'error')
+        return
+      }
+      window.requestIdleCallback(() => addAlert('Mail has been sent', 'success'))
+      window.requestIdleCallback(this.handleClose)
+    }
+
+    setSending(isSending) {
+      this._sending = isSending
+      this.setState({ isSending })
+    }
+
+    isValid() {
+      const { hasKeys, Subject, SenderName, SenderEmail, TargetEmails } = this.state
+      return hasKeys && !!SenderName && !!SenderEmail && !!TargetEmails.length && !!Subject
     }
 
     handleRemoveLastEmail = email => {
@@ -148,8 +165,6 @@ export default connect(
       this.props.updateSettings(settings => {
         return settings
           .setIn(['api', 'Subject'], this.state.Subject)
-          .setIn(['api', 'APIKey'], this.state.APIKey)
-          .setIn(['api', 'APISecret'], this.state.APISecret)
           .setIn(['api', 'SenderName'], this.state.SenderName)
           .setIn(['api', 'SenderEmail'], this.state.SenderEmail)
           .setIn(['api', 'TargetEmails'], this.state.TargetEmails)
@@ -204,16 +219,7 @@ export default connect(
     render() {
       const { isOpened } = this.props
 
-      const { emails, Subject, APIKey, APISecret, SenderName, SenderEmail, TargetEmails } =
-        this.state
-
-      const isValid =
-        !!APIKey &&
-        !!APISecret &&
-        !!SenderName &&
-        !!SenderEmail &&
-        !!TargetEmails.length &&
-        !!Subject
+      const { emails, Subject, SenderName, SenderEmail, TargetEmails, isSending } = this.state
 
       return (
         <Modal isOpened={isOpened} onClose={this.handleClose}>
@@ -221,8 +227,7 @@ export default connect(
 
           <form onSubmit={this.handleSubmit} className="flow-v-20">
             <MailjetInfos
-              APIKey={APIKey}
-              APISecret={APISecret}
+              onKeysChange={this.handleKeysChange}
               SenderName={SenderName}
               SenderEmail={SenderEmail}
               onChange={this.handleChangeInfo}
@@ -270,8 +275,8 @@ export default connect(
           </form>
 
           <div className="ModalFooter">
-            <Button primary onClick={this.handleSubmit} disabled={!isValid}>
-              {'Send'}
+            <Button primary onClick={this.handleSubmit} disabled={!this.isValid() || isSending}>
+              {isSending ? 'Sending…' : 'Send'}
             </Button>
             <Button variant="secondary" onClick={this.handleClose}>
               {'Cancel'}
