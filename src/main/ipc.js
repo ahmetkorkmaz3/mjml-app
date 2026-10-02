@@ -26,7 +26,7 @@ const storageSet = promisify(storage.set)
 
 const EXTERNAL_PROTOCOLS = ['http:', 'https:', 'mailto:']
 
-function openExternal(url) {
+export function openExternal(url) {
   let protocol
   try {
     ;({ protocol } = new URL(url))

@@ -4,7 +4,7 @@ import { autoUpdater } from 'electron-updater'
 import fixPath from 'fix-path'
 
 import { saveWindowSettings, getWindowSettings, getStoredSettings } from './window-settings'
-import { registerIpcHandlers } from './ipc'
+import { openExternal, registerIpcHandlers } from './ipc'
 import { buildMenuTemplate } from './menu'
 import { normalizeThemeSetting, windowColors } from './theme'
 import { fitBounds } from './window-bounds'
@@ -215,6 +215,37 @@ app.on('activate', async () => {
   }
 })
 
+// The app never navigates: the links of the emails and of the pages open in
+// the browser. Programmatic loads (loadURL, reload) do not emit these events.
+app.on('web-contents-created', (e, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    openExternal(url)
+    return { action: 'deny' }
+  })
+  contents.on('will-navigate', (event, url) => {
+    event.preventDefault()
+    openExternal(url)
+  })
+})
+
+// Windows and Linux start a second process when the user opens a .mjml file,
+// that process gives the file to this one and quits
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', (event, argv) => {
+    const file = argv.slice(1).find(arg => arg.endsWith('.mjml'))
+    if (file) {
+      openPath = file
+      sendOpenPath()
+    }
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+}
+
 // macOS sends this event when the user opens a .mjml file with the app
 app.on('open-file', (event, filePath) => {
   event.preventDefault()
@@ -246,6 +277,8 @@ app.whenReady().then(async () => {
   mainWindow = await createMainWindow()
   rebuildMenu()
   if (!isDevelopment) {
-    autoUpdater.checkForUpdatesAndNotify()
+    // no network or no release feed must not stop the app
+    autoUpdater.on('error', err => console.error('Update check failed:', err.message))
+    autoUpdater.checkForUpdatesAndNotify().catch(() => {})
   }
 })
