@@ -2,6 +2,14 @@
 # yarn lockfile v1
 
 
+"@ai-sdk/anthropic@^4":
+  version "4.0.71"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/anthropic/-/anthropic-4.0.71.tgz#29bdafc9bcdf445cbc97fd49eba4ed8ba25f0f64"
+  integrity sha512-wiv3jhUH0RrvGzSolJMZfZ2cI9As45LhwYmcAoWvNivXjC7wzJ4W/Udq9/u7EGnGsT8lpmFKEKBrMXVeUO97Dg==
+  dependencies:
+    "@ai-sdk/provider" "4.0.21"
+    "@ai-sdk/provider-utils" "5.0.53"
+
 "@ai-sdk/gateway@4.0.103":
   version "4.0.103"
   resolved "https://registry.yarnpkg.com/@ai-sdk/gateway/-/gateway-4.0.103.tgz#0d3bba50003e0d49a27c50631200feecc8a06dcf"
@@ -10,6 +18,30 @@
     "@ai-sdk/provider" "4.0.21"
     "@ai-sdk/provider-utils" "5.0.53"
     "@vercel/oidc" "3.2.0"
+
+"@ai-sdk/google@^4":
+  version "4.0.87"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/google/-/google-4.0.87.tgz#964f5fde513a475c5a671367d348a57ff444079d"
+  integrity sha512-s0tWc+QeSce7O2ZLm+VWSRQy16dGfqEcMIUxEWh+LFvXX3h0TLH8jxCQ2H1qhiBgTta+6A97eHPhBlRFu1xy+g==
+  dependencies:
+    "@ai-sdk/provider" "4.0.21"
+    "@ai-sdk/provider-utils" "5.0.53"
+
+"@ai-sdk/openai-compatible@^3":
+  version "3.0.62"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/openai-compatible/-/openai-compatible-3.0.62.tgz#5ea2732d2b95a0c3cbd5e1d083d096d6bd448d34"
+  integrity sha512-IAz1xv8zot4KLGa8kN7UfAA6H5+ARzAgAKLsoKxHPBzZuOc2E3ohaELg0x/JR9HVTbMbiftb0dPyCb8cT2KBRg==
+  dependencies:
+    "@ai-sdk/provider" "4.0.21"
+    "@ai-sdk/provider-utils" "5.0.53"
+
+"@ai-sdk/openai@^4":
+  version "4.0.83"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-4.0.83.tgz#8832342242426580d6cdae6965eabd02793370ce"
+  integrity sha512-NgqZVWoya7hfmtLkWyIjX9THbyYMLfxFqpShdAmvMnkoT+R9AZbdULGan8+4BiBWIZ1aHiAsc90l3SL8QU/0+Q==
+  dependencies:
+    "@ai-sdk/provider" "4.0.21"
+    "@ai-sdk/provider-utils" "5.0.53"
 
 "@ai-sdk/provider-utils@5.0.53":
   version "5.0.53"
