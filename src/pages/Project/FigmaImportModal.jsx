@@ -19,7 +19,7 @@ export const STEP_LABELS = {
   write: 'Saving the file',
 }
 
-const SETTINGS_CODES = [
+export const SETTINGS_CODES = [
   'AI_KEY_MISSING',
   'AI_UNAUTHORIZED',
   'AI_MODEL_MISSING',
@@ -59,7 +59,7 @@ function FigmaImportModal({ isOpened, rootPath, ai, figma, closeModal, openModal
     return () => {
       alive = false
     }
-  }, [rootPath, fileName])
+  }, [isOpened, rootPath, fileName])
 
   const isNameValid = NAME_RE.test(fileName) && !exists
   const canSubmit = Boolean(link.trim()) && isNameValid && !progress
@@ -68,15 +68,21 @@ function FigmaImportModal({ isOpened, rootPath, ai, figma, closeModal, openModal
     setError(null)
     setProgress({ step: 'parse' })
     isRunning.current = true
-    const res = await api.figma.import({
-      link: link.trim(),
-      projectPath: rootPath,
-      fileName: `${fileName}.mjml`,
-      ai: ai.toJS(),
-      figma: { ...figma.toJS(), source },
-    })
-    isRunning.current = false
-    setProgress(null)
+    let res
+    try {
+      res = await api.figma.import({
+        link: link.trim(),
+        projectPath: rootPath,
+        fileName: `${fileName}.mjml`,
+        ai: ai.toJS(),
+        figma: { ...figma.toJS(), source },
+      })
+    } catch (err) {
+      res = { error: { code: 'UNKNOWN', message: err.message } }
+    } finally {
+      isRunning.current = false
+      setProgress(null)
+    }
 
     if (res.error) {
       if (res.error.code !== 'CANCELLED') {
@@ -110,7 +116,7 @@ function FigmaImportModal({ isOpened, rootPath, ai, figma, closeModal, openModal
   }
 
   return (
-    <Modal isOpened={isOpened} onClose={handleClose}>
+    <Modal isOpened={isOpened} onClose={progress ? () => {} : handleClose}>
       <div className="Modal--label">{'Import from Figma'}</div>
 
       <form className="flow-v-20" onSubmit={handleSubmit}>
@@ -153,6 +159,11 @@ function FigmaImportModal({ isOpened, rootPath, ai, figma, closeModal, openModal
           {`Source: ${figma.get('source') === 'rest' ? 'Figma REST API' : 'Figma desktop MCP'} · `}
           {`AI: ${ai.get('provider')}${ai.get('model') ? ` (${ai.get('model')})` : ''}`}
         </div>
+        {figma.get('source') !== 'rest' && (
+          <div className="t-small">
+            {'The file in the link must be the active tab in the Figma desktop app.'}
+          </div>
+        )}
 
         {progress && (
           <div className="t-small">
