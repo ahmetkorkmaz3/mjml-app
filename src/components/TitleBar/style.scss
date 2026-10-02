@@ -67,6 +67,7 @@
 }
 
 .TitleBar--right {
-  flex: 1 1 0;
+  // the buttons never shrink under the center part, the left part shrinks
+  flex: 1 0 auto;
   justify-content: flex-end;
 }

@@ -128,3 +128,41 @@ export async function createOrEmpty(location) {
     throw new Error('Directory not empty')
   }
 }
+
+// Copies the files `relativePaths` (from findLocalAssets) of `sourceDir` to
+// the same place in `targetDir`. It never overwrites a file. Returns the
+// number of copied files and the paths that do not exist in `sourceDir`.
+export async function copyAssets(sourceDir, targetDir, relativePaths) {
+  const result = { copied: 0, missing: [] }
+  const source = path.resolve(sourceDir)
+  const target = path.resolve(targetDir)
+  if (source === target) {
+    return result
+  }
+  for (const rel of relativePaths) {
+    const from = path.resolve(source, rel)
+    const to = path.resolve(target, rel)
+    // findLocalAssets removes "..", this keeps the files in the two folders
+    if (!from.startsWith(source + path.sep) || !to.startsWith(target + path.sep)) {
+      continue
+    }
+    try {
+      if (!(await fs.stat(from)).isFile()) {
+        continue
+      }
+    } catch (err) {
+      result.missing.push(rel)
+      continue
+    }
+    await fs.mkdir(path.dirname(to), { recursive: true })
+    try {
+      await fs.copyFile(from, to, constants.COPYFILE_EXCL)
+      result.copied++
+    } catch (err) {
+      if (err.code !== 'EEXIST') {
+        throw err
+      }
+    }
+  }
+  return result
+}

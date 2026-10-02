@@ -2,6 +2,7 @@ import kebabCase from 'lodash/kebabCase'
 
 import api, { path } from 'helpers/api'
 import mjml2html from 'helpers/mjml'
+import { exportHTML, exportMessage } from 'helpers/export-html'
 import router from 'router'
 
 import { addAlert } from 'reducers/alerts'
@@ -19,7 +20,6 @@ import {
   fileDialog,
   readFile,
   readDirNames,
-  isReadWrite,
   rename,
   writeFile,
   mkdir,
@@ -43,8 +43,12 @@ export function addProject(p) {
       }
     }
 
-    if (!(await isReadWrite(p))) {
-      throw new Error(`Cannot read or write in ${p}`)
+    // the callers do not catch, so an error shows as an alert here
+    if (!(await isValidDir(p))) {
+      dispatch(
+        addAlert(`Cannot open ${p}: the folder must exist and be readable and writable`, 'error'),
+      )
+      return
     }
 
     dispatch(saveLastOpenedFolder(p))
@@ -53,11 +57,15 @@ export function addProject(p) {
 }
 
 export function removeProject(p, shouldDeleteFolder = false) {
-  return dispatch => {
+  return async dispatch => {
     dispatch({ type: 'PROJECT_REMOVE', payload: p })
     dispatch(saveSettings())
     if (shouldDeleteFolder) {
-      api.shell.trashItem(p)
+      try {
+        await api.shell.trashItem(p)
+      } catch (err) {
+        dispatch(addAlert(`Could not move ${p} to the trash: ${err.message}`, 'error'))
+      }
     }
   }
 }
@@ -76,7 +84,7 @@ function loadIfNeeded(path) {
     const state = getState()
     const proj = state.projects.find(p => p.get('path') === path)
     if (!proj) {
-      const enriched = await loadProject(path)
+      const enriched = await loadProject(path, getMJMLPath(state.settings))
       dispatch({ type: 'PROJECT_LOAD', payload: enriched })
       dispatch(saveSettings())
     }
@@ -167,7 +175,12 @@ export function updateProjectMtime(p, mtime) {
 
 export function renameProject(oldPath, newPath) {
   return async dispatch => {
-    await rename(oldPath, newPath)
+    try {
+      await rename(oldPath, newPath)
+    } catch (err) {
+      dispatch(addAlert(`Could not rename the project: ${err.message}`, 'error'))
+      return
+    }
     dispatch({
       type: 'PROJECT_RENAME',
       payload: { oldPath, newPath },
@@ -176,26 +189,31 @@ export function renameProject(oldPath, newPath) {
   }
 }
 
+// a dropped folder opens as a project, a dropped .mjml file opens its folder
 export function dropFile(filePath) {
-  return dispatch => {
-    const ext = path.extname(filePath)
-    if (ext !== '.mjml') {
-      return
+  return async dispatch => {
+    if (path.extname(filePath) === '.mjml') {
+      return dispatch(addProject(path.dirname(filePath)))
     }
-    const dir = path.dirname(filePath)
-    dispatch(openProject(dir))
+    if (await isValidDir(filePath)) {
+      return dispatch(addProject(filePath))
+    }
+    dispatch(addAlert('Drop a folder or an .mjml file to open a project', 'error'))
   }
 }
 
 async function massExport(state, asyncJob, allFiles = false) {
   const projectsToExport = state.projects
     .filter(p => state.selectedProjects.find(path => path === p.get('path')))
-    .filter(p => p.get('html'))
+    // "all files" renders each file again, the other exports use the index preview
+    .filter(p => allFiles || p.get('html'))
 
   if (projectsToExport.size === 0) {
-    return
+    throw new Error('The selected projects have no MJML file to export')
   }
   const targetPath = await fileDialog({
+    title: 'Choose the export folder',
+    buttonLabel: 'Export',
     defaultPath: state.settings.get('lastExportedFolder') || HOME_DIR,
     properties: ['openDirectory', 'createDirectory'],
   })
@@ -224,7 +242,7 @@ async function massExport(state, asyncJob, allFiles = false) {
 
         const targetName = file.replace(/\.mjml$/, '.html')
 
-        await asyncJob(path.join(targetDir, targetName), result.html)
+        await asyncJob(path.join(targetDir, targetName), result.html, projPath)
       }
     } else {
       const projSafeName = `${kebabCase(projBaseName)}.html`
@@ -235,28 +253,43 @@ async function massExport(state, asyncJob, allFiles = false) {
   return targetPath
 }
 
-export function exportSelectedProjectsToHTML() {
+// exports the HTML files and copies the local files that they use
+function massExportHTML(allFiles) {
   return async (dispatch, getState) => {
-    const targetPath = await massExport(getState(), (filePath, p) =>
-      writeFile(filePath, p.get('html')),
-    )
-    if (targetPath) {
-      dispatch(saveLastExportedFolder(targetPath))
+    const total = { copied: 0, missing: [] }
+    const job = async (filePath, html, projPath) => {
+      const { copied, missing } = await exportHTML(html, projPath, filePath)
+      total.copied += copied
+      total.missing.push(...missing)
+    }
+    try {
+      const targetPath = await massExport(
+        getState(),
+        allFiles ? job : (filePath, p) => job(filePath, p.get('html'), p.get('path')),
+        allFiles,
+      )
+      if (targetPath) {
+        dispatch(
+          addAlert(
+            exportMessage('Exported the HTML', total),
+            total.missing.length ? 'info' : 'success',
+            { autoHide: !total.missing.length },
+          ),
+        )
+        dispatch(saveLastExportedFolder(targetPath))
+      }
+    } catch (err) {
+      dispatch(addAlert(`Could not export the HTML: ${err.message}`, 'error'))
     }
   }
 }
 
+export function exportSelectedProjectsToHTML() {
+  return massExportHTML(false)
+}
+
 export function exportSelectedProjectsAllFilesToHTML() {
-  return async (dispatch, getState) => {
-    const targetPath = await massExport(
-      getState(),
-      (filePath, html) => writeFile(filePath, html, { flag: 'w' }),
-      true,
-    )
-    if (targetPath) {
-      dispatch(saveLastExportedFolder(targetPath))
-    }
-  }
+  return massExportHTML(true)
 }
 
 export function exportSelectedProjectsToImages(done) {
@@ -264,15 +297,17 @@ export function exportSelectedProjectsToImages(done) {
     const state = getState()
 
     try {
-      const targetPath = await massExport(state, async (filePath, p, targetDir) => {
+      const targetPath = await massExport(state, async (filePath, p) => {
         const html = p.get('html')
+        // the screenshot loads the HTML from the project, so the relative images resolve
+        const projPath = p.get('path')
         const previewSize = state.settings.get('previewSize')
         const [mobileWidth, desktopWidth] = [previewSize.get('mobile'), previewSize.get('desktop')]
         const [mobileScreenshot, desktopScreenshot] = await Promise.all([
-          api.screenshot.take(html, mobileWidth, targetDir),
-          api.screenshot.take(html, desktopWidth, targetDir),
+          api.screenshot.take(html, mobileWidth, projPath),
+          api.screenshot.take(html, desktopWidth, projPath),
         ])
-        await api.screenshot.cleanUp(targetDir)
+        await api.screenshot.cleanUp(projPath)
         await Promise.all([
           writeFile(`${filePath.replace(/.html$/, '')}_mobile.png`, mobileScreenshot),
           writeFile(`${filePath.replace(/.html$/, '')}_desktop.png`, desktopScreenshot),
@@ -305,9 +340,9 @@ export function duplicateProject(projectPath) {
     try {
       const newProjectPath = await getDuplicatePath(projectPath)
       await copyDir(projectPath, newProjectPath)
-      dispatch(loadIfNeeded(newProjectPath))
+      await dispatch(loadIfNeeded(newProjectPath))
     } catch (err) {
-      console.log(err)
+      dispatch(addAlert(`Could not duplicate the project: ${err.message}`, 'error'))
     }
   }
 }
@@ -339,12 +374,12 @@ export function openExternalFile(filePath) {
       const dirName = path.dirname(filePath)
       const validDir = await isValidDir(dirName)
       if (!validDir) {
-        throw new Error('Cant open that.')
+        throw new Error('the folder must be readable and writable')
       }
       await waitUntilLoaded(getState)
       dispatch(openProject(dirName))
     } catch (err) {
-      console.log(err)
+      dispatch(addAlert(`Could not open ${filePath}: ${err.message}`, 'error'))
     }
     dispatch(closeExternalFileOverlay())
   }

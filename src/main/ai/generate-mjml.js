@@ -14,6 +14,10 @@ import {
 
 export const MAX_FIX_ROUNDS = 2
 
+// Without a limit some providers stop the answer early (a small default).
+// 16384 is in the output limit of the common models (gpt-4o included).
+export const MAX_OUTPUT_TOKENS = 16384
+
 const NO_IMAGES_WARNING =
   'The model does not accept images, so the app sent only the design data. The result can be less accurate.'
 const VISUAL_CHECK_WARNING =
@@ -51,6 +55,7 @@ function createSession({ model, signal, warnings }) {
         system: SYSTEM_PROMPT,
         messages: acceptsImages ? messages : stripImages(messages),
         abortSignal: signal,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
         maxRetries: 1,
       })
       usage.inputTokens += res.usage?.inputTokens ?? 0

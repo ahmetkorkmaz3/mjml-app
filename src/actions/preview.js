@@ -8,9 +8,17 @@ import { setEditorStatus } from 'reducers/editorStatus'
 
 const setPrev = createAction('SET_PREVIEW')
 
-export function setPreview(fileName, content = '') {
+// each call has a number: a slow render that ends after a newer call is dropped
+let lastRequest = 0
+
+// options: rootPath (the project folder, mj-include can read the files in it)
+export function setPreview(fileName, content = '', options = {}) {
   return async (dispatch, getState) => {
+    const request = ++lastRequest
+    const isLatest = () => request === lastRequest
+
     if (!fileName) {
+      dispatch(setEditorStatus({ isRendering: false }))
       return dispatch(setPrev(null))
     }
 
@@ -25,12 +33,19 @@ export function setPreview(fileName, content = '') {
     const mjmlManual = settings.getIn(['mjml', 'engine']) === 'manual'
     const mjmlPath = mjmlManual ? settings.getIn(['mjml', 'path']) : undefined
 
+    // an older MJML render can still be in progress
+    if (ext !== '.mjml') {
+      dispatch(setEditorStatus({ isRendering: false }))
+    }
+
     switch (ext) {
       case '.html':
         if (!content) {
           content = await readFile(fileName)
         }
-        dispatch(setPrev({ type: 'html', content }))
+        if (isLatest()) {
+          dispatch(setPrev({ type: 'html', content }))
+        }
         break
       case '.jpg':
       case '.png':
@@ -41,8 +56,12 @@ export function setPreview(fileName, content = '') {
         if (!content) {
           content = await readFile(fileName)
         }
+        if (!isLatest()) {
+          return
+        }
         const renderOpts = {
           minify: settings.getIn(['mjml', 'minify']),
+          rootPath: options.rootPath,
         }
 
         dispatch(setEditorStatus({ isRendering: true }))
@@ -51,10 +70,16 @@ export function setPreview(fileName, content = '') {
         try {
           result = await mjml2html(content, fileName, mjmlPath, renderOpts)
         } finally {
-          const renderMs = Math.round(performance.now() - startedAt)
-          dispatch(setEditorStatus({ isRendering: false, renderMs }))
+          // a newer render shows its own status
+          if (isLatest()) {
+            const renderMs = Math.round(performance.now() - startedAt)
+            dispatch(setEditorStatus({ isRendering: false, renderMs }))
+          }
         }
         const { html, errors } = result
+        if (!isLatest()) {
+          return
+        }
         dispatch(setPrev({ type: 'html', content: html, errors }))
         // update the preview in project
         if (bName === 'index.mjml') {

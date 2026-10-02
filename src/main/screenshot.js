@@ -1,62 +1,74 @@
+import { randomUUID } from 'node:crypto'
 import { unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { BrowserWindow } from 'electron'
 
-const SCREENSHOT_TMP_FILE = 'tpm-mjml-preview.html'
+// the name of the temporary file of the old versions
+const LEGACY_TMP_FILE = 'tpm-mjml-preview.html'
+const TMP_PREFIX = '.mjml-app-screenshot-'
 
-// The temporary file is in the working directory, so relative image paths of
-// the HTML resolve.
-export function takeScreenshot(html, deviceWidth, workingDirectory) {
-  return new Promise((resolve, reject) => {
-    const win = new BrowserWindow({
-      width: deviceWidth,
-      show: false,
-    })
+// the longest wait for the images, in ms
+const IMAGES_TIMEOUT = 5000
 
-    const tmpFileName = join(workingDirectory, SCREENSHOT_TMP_FILE)
-
-    win.webContents.once('did-finish-load', async () => {
-      try {
-        const height = await win.webContents.executeJavaScript(
-          "document.querySelector('body').getBoundingClientRect().height",
-        )
-        win.setSize(deviceWidth, Math.ceil(height) + 50)
-        // Window is not fully painted after this event, hence setTimeout()...
-        setTimeout(async () => {
-          try {
-            const img = await win.webContents.capturePage()
-            resolve(img.toPNG())
-          } catch (err) {
-            reject(err)
-          } finally {
-            win.close()
-          }
-        }, 500)
-      } catch (err) {
-        win.close()
-        reject(err)
-      }
-    })
-
-    writeFile(tmpFileName, html)
-      .then(() => win.loadURL(pathToFileURL(tmpFileName).href))
-      .catch(err => {
-        win.close()
-        reject(err)
-      })
+// resolves when all the images are loaded (or failed), or after the timeout
+const WAIT_FOR_IMAGES = `new Promise(resolve => {
+  const pending = [...document.images].filter(img => !img.complete)
+  let left = pending.length
+  if (!left) return resolve()
+  const done = () => {
+    left -= 1
+    if (!left) resolve()
+  }
+  pending.forEach(img => {
+    img.addEventListener('load', done, { once: true })
+    img.addEventListener('error', done, { once: true })
   })
+  setTimeout(resolve, ${IMAGES_TIMEOUT})
+})`
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+// Each call has its own temporary file, so two calls can run at the same
+// time. The file is in the working directory, so relative image paths of the
+// HTML resolve. The file is always deleted.
+export async function takeScreenshot(html, deviceWidth, workingDirectory) {
+  const tmpFileName = join(workingDirectory, `${TMP_PREFIX}${randomUUID()}.html`)
+  const win = new BrowserWindow({
+    width: deviceWidth,
+    useContentSize: true,
+    show: false,
+  })
+
+  try {
+    await writeFile(tmpFileName, html)
+    await win.loadURL(pathToFileURL(tmpFileName).href)
+    await win.webContents.executeJavaScript(WAIT_FOR_IMAGES)
+    const height = await win.webContents.executeJavaScript(
+      'Math.ceil(document.documentElement.getBoundingClientRect().height)',
+    )
+    win.setContentSize(deviceWidth, Math.max(1, height))
+    // the window is not painted again at once after the resize
+    await delay(300)
+    const img = await win.webContents.capturePage()
+    return img.toPNG()
+  } finally {
+    win.destroy()
+    await unlink(tmpFileName).catch(() => {})
+  }
 }
 
-export function cleanUpScreenshot(workingDirectory) {
-  return unlink(join(workingDirectory, SCREENSHOT_TMP_FILE))
+// Removes the temporary file of the old versions, if it is there. It never
+// fails: the screenshots are saved even when the cleanup cannot run.
+export async function cleanUpScreenshot(workingDirectory) {
+  try {
+    await unlink(join(workingDirectory, LEGACY_TMP_FILE))
+  } catch (err) {
+    // no file, or no access
+  }
 }
 
 // screenshot for the visual check of the Figma import
-export async function renderScreenshot(html, width, workingDirectory) {
-  try {
-    return await takeScreenshot(html, width, workingDirectory)
-  } finally {
-    await cleanUpScreenshot(workingDirectory).catch(() => {})
-  }
+export function renderScreenshot(html, width, workingDirectory) {
+  return takeScreenshot(html, width, workingDirectory)
 }

@@ -26,6 +26,37 @@ const rendererRoots = [
   'templates',
 ]
 
+// Content-Security-Policy of the packaged renderer. The dev server needs inline
+// scripts (React refresh), so the policy is only in the built index.html.
+// The email preview (an about:blank iframe without allow-scripts) inherits it:
+// emails use inline styles, Google Fonts stylesheets and fonts, and remote,
+// data: and local (file:) images.
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline' https:",
+  "img-src 'self' data: blob: file: https: http:",
+  "font-src 'self' data: file: https:",
+  "media-src 'self' data: blob: file: https:",
+  "connect-src 'self' https: http://127.0.0.1:* http://localhost:*",
+  "frame-src 'self' about:",
+  "object-src 'none'",
+].join('; ')
+
+function contentSecurityPolicyPlugin() {
+  return {
+    name: 'mjml-app:csp',
+    apply: 'build',
+    transformIndexHtml: () => [
+      {
+        tag: 'meta',
+        attrs: { 'http-equiv': 'Content-Security-Policy', content: contentSecurityPolicy },
+        injectTo: 'head-prepend',
+      },
+    ],
+  }
+}
+
 export default defineConfig({
   main: {
     build: {
@@ -58,6 +89,6 @@ export default defineConfig({
         input: resolve(src, 'renderer/index.html'),
       },
     },
-    plugins: [react()],
+    plugins: [react(), contentSecurityPolicyPlugin()],
   },
 })

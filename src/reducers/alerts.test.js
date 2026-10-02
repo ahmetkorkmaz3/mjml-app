@@ -23,3 +23,23 @@ describe('alerts reducer', () => {
     expect(dispatch).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'ALERT_REMOVE' }))
   })
 })
+
+describe('addAlert', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('keeps an error until it is closed', () => {
+    vi.useFakeTimers()
+    const dispatch = vi.fn()
+    addAlert('Failed', 'error')(dispatch)
+    vi.advanceTimersByTime(60e3)
+    expect(dispatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides an error when autoHide is set', () => {
+    vi.useFakeTimers()
+    const dispatch = vi.fn()
+    addAlert('Failed', 'error', { autoHide: true })(dispatch)
+    vi.advanceTimersByTime(4e3)
+    expect(dispatch).toHaveBeenCalledTimes(2)
+  })
+})

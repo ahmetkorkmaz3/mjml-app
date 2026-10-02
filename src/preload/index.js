@@ -10,7 +10,6 @@ import path from 'node:path'
 
 import * as fs from './fs'
 import * as mjml from './mjml'
-import sendEmail from './send-email'
 
 const EVENT_CHANNELS = [
   'redux-command',
@@ -42,7 +41,8 @@ const api = {
     // erb runs in the main process: its `vm` sandbox crashes the renderer
     compile: params => ipcRenderer.invoke('templating:compile', params),
   },
-  sendEmail,
+  // the main process adds the Mailjet keys, the renderer cannot read them
+  sendEmail: params => ipcRenderer.invoke('mailjet:send', params),
 
   // Figma import: the main process keeps the keys and makes the requests
   figma: {

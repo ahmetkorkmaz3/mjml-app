@@ -9,6 +9,7 @@ import Iframe from 'components/Iframe'
 import { updateSettings } from 'actions/settings'
 import { addAlert } from 'reducers/alerts'
 import { compile } from 'helpers/preview-content'
+import { pathToFileURL } from 'helpers/file-url'
 
 export default connect(
   state => ({
@@ -26,20 +27,27 @@ export default connect(
       content: '',
     }
 
+    // the number of the last compile: an older result that ends later is dropped
+    _compileId = 0
+
+    // the last error shown, so the same error does not show on each keystroke
+    _lastError = null
+
+    componentDidMount() {
+      // the preview can exist before this component (the preview was hidden)
+      if (this.props.preview) {
+        this.updateContent(this.getParams(this.props))
+      }
+    }
+
     componentDidUpdate(prevProps) {
-      const prev = {
-        engine: this.getProjectVariables(prevProps).engine,
-        variables: this.getProjectVariables(prevProps).variables,
-        raw: prevProps.preview ? prevProps.preview.content : '',
-      }
+      const current = this.getParams(this.props)
+      !isEqual(this.getParams(prevProps), current) && this.updateContent(current)
+    }
 
-      const current = {
-        engine: this.getProjectVariables(this.props).engine,
-        variables: this.getProjectVariables(this.props).variables,
-        raw: this.props.preview ? this.props.preview.content : '',
-      }
-
-      !isEqual(prev, current) && this.updateContent(current)
+    getParams = props => {
+      const { engine, variables } = this.getProjectVariables(props)
+      return { engine, variables, raw: props.preview ? props.preview.content : '' }
     }
 
     getProjectVariables = props => {
@@ -48,10 +56,19 @@ export default connect(
     }
 
     updateContent = async params => {
+      const id = ++this._compileId
       try {
         const content = await compile(params)
+        if (id !== this._compileId) {
+          return
+        }
+        this._lastError = null
         this.setState({ content })
       } catch (err) {
+        if (id !== this._compileId || err.message === this._lastError) {
+          return
+        }
+        this._lastError = err.message
         this.props.addAlert(`[Template Compiler Error] ${err.message}`, 'error')
       }
     }
@@ -71,7 +88,7 @@ export default connect(
               preview.type === 'html' ? (
                 <Iframe base={iframeBase} value={content} openLinks />
               ) : preview.type === 'image' ? (
-                <img className="FileList--preview-image" src={`file://${preview.content}`} />
+                <img className="FileList--preview-image" src={pathToFileURL(preview.content)} />
               ) : null
             ) : null}
             {preview && preview.type === 'html' && (

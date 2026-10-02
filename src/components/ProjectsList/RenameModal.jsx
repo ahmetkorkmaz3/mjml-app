@@ -12,12 +12,17 @@ import { alreadyExists } from 'helpers/fs'
 
 import ConfirmModal from 'components/Modal/ConfirmModal'
 
+import { getProjectNameError } from './projectName'
+
+const EXISTS_ERROR = 'A file or folder with this name already exists'
+
 class RenameModal extends Component {
   state = {
     newName: '',
     oldName: '',
     // unset / checking / valid / invalid
     projectLocStatus: 'unset',
+    nameError: null,
   }
 
   componentDidUpdate(prevProps) {
@@ -26,6 +31,7 @@ class RenameModal extends Component {
         newName: pathModule.basename(this.props.path),
         oldName: pathModule.basename(this.props.path),
         projectLocStatus: 'unset',
+        nameError: null,
       })
       this._inputName && this._inputName.focus()
     }
@@ -42,19 +48,22 @@ class RenameModal extends Component {
 
     const { path } = this.props
 
-    const dir = path ? pathModule.dirname(path) : null
-    const fullPath = newName && dir ? pathModule.join(dir, newName) : null
+    if (!path || getProjectNameError(newName)) {
+      return
+    }
 
-    this.props.onConfirm(fullPath)
+    this.props.onConfirm(pathModule.join(pathModule.dirname(path), newName.trim()))
   }
 
   handleChangeNewName = e => {
     const newName = e.target.value
+    const nameError = newName ? getProjectNameError(newName) : null
     this.setState({
       newName,
-      projectLocStatus: newName ? 'checking' : 'unset',
+      nameError,
+      projectLocStatus: !newName ? 'unset' : nameError ? 'invalid' : 'checking',
     })
-    if (newName) {
+    if (newName && !nameError) {
       this.debounceCheckName()
     }
   }
@@ -62,27 +71,36 @@ class RenameModal extends Component {
   debounceCheckName = debounce(async () => {
     const { path } = this.props
     const { newName } = this.state
-    if (!newName) {
+    if (!newName || !path) {
       return this.setState({
         projectLocStatus: 'unset',
       })
     }
-    const dir = pathModule.dirname(path)
-    const full = pathModule.join(dir, newName)
+    const nameError = getProjectNameError(newName)
+    if (nameError) {
+      return this.setState({ projectLocStatus: 'invalid', nameError })
+    }
+    const full = pathModule.join(pathModule.dirname(path), newName.trim())
     const exists = await alreadyExists(full)
+    // the name can change while the check runs
+    if (this.state.newName !== newName) {
+      return
+    }
     this.setState({
       projectLocStatus: exists ? 'invalid' : 'valid',
+      nameError: exists ? EXISTS_ERROR : null,
     })
   }, 250)
 
   render() {
     const { isOpened, onCancel, path } = this.props
 
-    const { newName, oldName, projectLocStatus } = this.state
+    const { newName, oldName, projectLocStatus, nameError } = this.state
 
-    const hasChanged = newName !== oldName
+    const hasChanged = newName.trim() !== oldName
     const dir = path ? pathModule.dirname(path) : null
-    const fullPath = newName && dir ? pathModule.join(dir, newName) : null
+    const fullPath =
+      newName && dir && !getProjectNameError(newName) ? pathModule.join(dir, newName.trim()) : null
 
     return (
       <ConfirmModal
@@ -131,7 +149,7 @@ class RenameModal extends Component {
                 {projectLocStatus === 'invalid' && (
                   <div className="t-small mt-10 c-red">
                     <IconError className="mr-5" />
-                    {'Directory exists and is not empty'}
+                    {nameError || EXISTS_ERROR}
                   </div>
                 )}
               </div>
