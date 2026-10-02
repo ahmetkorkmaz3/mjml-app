@@ -1,0 +1,68 @@
+@use '../../styles/vars.scss';
+
+.NewProjectModal {
+  min-height: 0;
+}
+
+.TemplateChooserTabs {
+  margin: -20px -20px 0 -20px;
+}
+
+.TemplateChooserTabs--tab {
+  text-align: center;
+  padding: 20px 0;
+  font-weight: bold;
+  border-bottom: 3px solid rgba(white, 0.07);
+  outline: none !important;
+  &:hover {
+    color: white;
+  }
+  &.isActive {
+    border-bottom-color: vars.$blue;
+    background: rgba(black, 0.1);
+    color: white;
+  }
+}
+
+.Gallery {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.Gallery-Item-wrapper {
+  padding: 3px;
+  border: 2px solid transparent;
+  margin-bottom: 5px;
+  margin-right: 5px;
+  outline: none !important;
+  opacity: 0.5;
+  transition: 150ms opacity;
+  &:focus,
+  &.isSelected {
+    border-color: vars.$blue;
+  }
+  &.isSelected {
+    opacity: 1;
+  }
+}
+
+.Gallery-Item {
+  background: rgba(black, 0.2);
+  width: 168px;
+  height: 200px;
+  background-repeat: no-repeat;
+  background-size: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding-top: 50px;
+}
+
+.Gallery-item-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background: vars.$blue;
+  color: white;
+  padding: 5px;
+}

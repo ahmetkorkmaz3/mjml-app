@@ -1,0 +1,98 @@
+@use 'sass:color';
+@use '../../styles/vars.scss';
+
+.ProjectsList {
+  overflow: auto;
+  margin: -10px;
+  padding: 5px;
+}
+
+.ProjectItem {
+  position: relative;
+  text-align: left;
+  float: left; // i mean, wtf?
+  width: 270px;
+  margin-right: 20px;
+  margin-bottom: 30px;
+  &:hover {
+    .ProjectItem--action-btn {
+      opacity: 1;
+    }
+    .ProjectItem--edit-btn {
+      display: block;
+    }
+  }
+}
+
+.ProjectItem--preview-container-wrapper {
+  padding: 5px;
+}
+
+.ProjectItem--preview-container {
+  display: block;
+  overflow: hidden;
+  position: relative;
+  height: 280px;
+  background-color: rgba(black, 0.15);
+}
+
+.ProjectItem--label {
+  font-size: 13px;
+  margin: 5px 0;
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ProjectItem--action-btn {
+  pointer-events: auto;
+  position: absolute;
+  top: -3px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  transition: 200ms ease-in-out;
+  transition-property: background, transform;
+  opacity: 0;
+  box-shadow: rgba(black, 0.2) 0 3px 8px;
+  &:active {
+    transform: scale(0.8);
+  }
+}
+
+.ProjectItem--delete-btn {
+  right: -3px;
+  background: #ca2d2d;
+  &:hover {
+    background: color.adjust(#ca2d2d, $lightness: 10%);
+  }
+}
+
+.ProjectItem--select-btn {
+  left: -3px;
+  background: white;
+  &.isActive {
+    opacity: 1;
+    background: vars.$blue;
+    color: white;
+  }
+}
+
+.ProjectItem--edit-btn {
+  display: none;
+  &:hover {
+    color: white;
+  }
+}
+
+.ProjectItem--duplicate-btn {
+  top: auto;
+  right: -3px;
+  bottom: 10px;
+  background: vars.$blue;
+}

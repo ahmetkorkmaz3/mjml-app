@@ -1,0 +1,116 @@
+@use 'sass:color';
+@use '../../styles/vars.scss';
+
+.Button {
+  white-space: pre;
+  overflow: hidden;
+  text-decoration: none;
+  -webkit-user-select: none;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+
+  &.small {
+    font-size: 11px;
+    padding: 0 5px;
+    height: 30px;
+  }
+
+  &.primary {
+    background: vars.$blue;
+    font-weight: bold;
+    color: white;
+    &:hover:not(:disabled),
+    &:focus:not(:disabled) {
+      background: color.adjust(vars.$blue, $lightness: 2%);
+    }
+    &:active:not(:disabled) {
+      background: color.adjust(vars.$blue, $lightness: -5%);
+    }
+    &:disabled {
+      opacity: 0.4;
+    }
+  }
+
+  &:focus {
+    z-index: 1;
+  }
+
+  &.warn {
+    background: rgba(white, 0.03);
+    &:hover {
+      cursor: pointer;
+      background: rgba(white, 0.05);
+    }
+  }
+
+  &.ghost,
+  &.transparent {
+    color: vars.$lighterGrey;
+    &:hover,
+    &:focus {
+      background-color: #3a3a43;
+      color: white;
+    }
+  }
+
+  &.ghost {
+    background-color: vars.$bg-light;
+  }
+
+  &.unclickable {
+    pointer-events: none;
+  }
+}
+
+.ButtonDropdown--dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 2px;
+  background: vars.$bg-light;
+  box-shadow: rgba(black, 0.2) 0 15px 100px;
+  z-index: 1;
+
+  &.position-auto {
+    right: auto;
+  }
+}
+
+.ButtonDropdown--dropdown-item {
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  user-select: none;
+  cursor: default;
+  &:hover {
+    color: white;
+    background: rgba(white, 0.05);
+  }
+
+  &.isActive {
+    background: vars.$blue;
+    color: white;
+  }
+
+  & + & {
+    border-top: 1px solid rgba(black, 0.3);
+  }
+}
+
+.ButtonDropdown--dropdown-item-icon {
+  flex-shrink: 0;
+  margin-right: 20px;
+}
+
+.ButtonDropdown--dropdown-item-title {
+  white-space: pre;
+}
+
+.BackButton--label {
+  transition: transform 250ms cubic-bezier(0.2, 1.4, 0.5, 1);
+}

@@ -1,0 +1,45 @@
+.anim-enter-fade {
+  animation: 300ms ease-in-out enterFade;
+}
+
+@keyframes enterFade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.anim-enter-fade-left {
+  animation: 200ms ease-in-out enterFadeLeft;
+}
+
+@keyframes enterFadeLeft {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.anim-mailjet {
+  transform: translate3d(-100px, 0, 0);
+  animation: 500ms cubic-bezier(0.28, 1.6, 0.46, 1) enterMailjet;
+  animation-delay: 150ms;
+  animation-fill-mode: forwards;
+}
+
+@keyframes enterMailjet {
+  0% {
+    opacity: 0;
+    transform: translate3d(-100px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}

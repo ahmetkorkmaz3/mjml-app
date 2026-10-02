@@ -1,0 +1,11 @@
+@use '../../styles/vars.scss';
+
+.MassActions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: vars.$bg-darker;
+  border-top: 2px solid vars.$bg-light;
+  z-index: 1;
+}

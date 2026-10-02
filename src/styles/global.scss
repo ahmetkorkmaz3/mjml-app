@@ -1,0 +1,181 @@
+@use 'vars.scss';
+@use 'animations.scss';
+@use 'select.scss';
+
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+*:focus {
+  outline: 2px solid rgba(vars.$blue, 0.6);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(black, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(black, 0.1);
+}
+
+body {
+  overflow-y: scroll;
+
+  &::-webkit-scrollbar {
+    width: 0;
+  }
+
+  font-family: Lato, sans-serif;
+  font-size: 14px;
+  color: vars.$evenLighterGrey;
+
+  &.with-scroll {
+    &::-webkit-scrollbar {
+      width: auto;
+    }
+  }
+}
+
+b {
+  font-weight: bold;
+}
+
+input {
+  cursor: text;
+}
+
+h2 {
+  cursor: default;
+  font-weight: bold;
+  color: rgba(white, 0.7);
+}
+
+input[type='text'],
+input[type='number'] {
+  border: 2px solid rgba(white, 0.1);
+  background-color: rgba(black, 0.1);
+  padding: 10px;
+}
+
+textarea {
+  border: 2px solid rgba(white, 0.1);
+  background-color: rgba(black, 0.1);
+  padding: 10px;
+  width: 100%;
+  height: 150px;
+  resize: none;
+}
+
+::-webkit-input-placeholder {
+  color: rgba(white, 0.2);
+}
+
+.round-label {
+  font-weight: bold;
+  background: vars.$yellow;
+  color: vars.$grey;
+  padding: 2px 8px;
+}
+
+a {
+  text-decoration: none;
+}
+
+.a {
+  text-decoration: underline;
+  cursor: pointer;
+
+  &.white {
+    &:hover {
+      color: rgba(white, 0.7);
+    }
+
+    &:focus,
+    &:active {
+      color: white;
+    }
+  }
+}
+
+.split-pane-divider {
+  position: relative;
+  z-index: 4000;
+
+  &:hover {
+    background: #34343f;
+  }
+
+  &:active,
+  &.dragging {
+    background: #42424f;
+  }
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.split-pane-divider.horizontal {
+  // the library sets a 1px width inline, use a larger grab area
+  width: 12px !important;
+  margin: 0 -6px;
+  border-left: 1px solid rgba(255, 255, 255, 0);
+  border-right: 1px solid rgba(255, 255, 255, 0);
+  cursor: col-resize;
+}
+
+.rotating {
+  transform-origin: center center;
+  animation: rotate linear infinite 2s;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.focus {
+  cursor: default;
+  outline: none;
+  border: 1px dashed transparent;
+  border-radius: 3px;
+  padding: 5px;
+
+  &:focus {
+    border: 1px dashed rgba(white, 0.2);
+  }
+}
+
+.brand {
+  background: rgba(white, 0.05);
+  overflow: hidden;
+}
+
+.settings-group {
+  border: 1px solid rgba(white, 0.05);
+  padding: 20px;
+}
+
+.red-star {
+  color: vars.$red;
+  margin-right: 5px;
+}
