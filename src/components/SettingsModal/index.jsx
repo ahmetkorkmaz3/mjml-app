@@ -10,7 +10,7 @@ import {
   MdCode as IconCode,
 } from 'react-icons/md'
 
-import { isModalOpened, closeModal } from 'reducers/modals'
+import { isModalOpened, getModalProps, closeModal } from 'reducers/modals'
 import { updateSettings } from 'actions/settings'
 
 import Modal from 'components/Modal'
@@ -73,6 +73,7 @@ function NumberInput({ value, onChange, min }) {
 export default connect(
   state => ({
     isOpened: isModalOpened(state, 'settings'),
+    initialTab: getModalProps(state, 'settings')?.tab,
     mobileSize: state.settings.getIn(['previewSize', 'mobile']),
     desktopSize: state.settings.getIn(['previewSize', 'desktop']),
     settings: state.settings,
@@ -156,7 +157,7 @@ export default connect(
           </div>
 
           <div className="SettingsModal--sections">
-            <TabsVertical>
+            <TabsVertical initialTab={this.props.initialTab}>
               <TabItem title="Appearance" icon={IconAppearance}>
                 <div className="SettingsSection--title">{'Appearance'}</div>
                 <SettingRow label="Theme" help="System follows the appearance of your computer.">

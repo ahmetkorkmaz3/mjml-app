@@ -48,7 +48,7 @@ export function buildMenuTemplate({ platform, context, theme, send, actions, isP
       item('new-project', 'New Project…', 'CmdOrCtrl+Shift+N'),
       item('new-file', 'New File…', 'CmdOrCtrl+N', isProject),
       item('open-project', 'Open Project…', 'CmdOrCtrl+O'),
-      item('import-figma', 'Import from Figma…', undefined, isProject),
+      item('import-figma', 'Import from Figma…', 'CmdOrCtrl+Shift+F', isProject),
       { type: 'separator' },
       item('save', 'Save', 'CmdOrCtrl+S', isProject && context.preventAutoSave),
       item('export-html', 'Export HTML…', 'CmdOrCtrl+E', isProject && context.hasPreview),
@@ -80,7 +80,7 @@ export function buildMenuTemplate({ platform, context, theme, send, actions, isP
       { type: 'separator' },
       item('find', 'Find', 'CmdOrCtrl+F'),
       item('beautify', 'Beautify', 'CmdOrCtrl+Shift+B', isProject && context.hasMjmlFile),
-      item('refine', 'Refine with AI…', undefined, isProject && context.hasMjmlFile),
+      item('refine', 'Refine with AI…', 'CmdOrCtrl+K', isProject && context.hasMjmlFile),
     ],
   }
 

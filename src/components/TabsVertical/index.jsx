@@ -4,8 +4,12 @@ import cx from 'classnames'
 import './style.scss'
 
 class TabsVertical extends PureComponent {
+  // initialTab: the title of the tab to show first
   state = {
-    index: 0,
+    index: Math.max(
+      0,
+      Children.toArray(this.props.children).findIndex(c => c.props.title === this.props.initialTab),
+    ),
   }
 
   handleSetTab = index => this.setState({ index })

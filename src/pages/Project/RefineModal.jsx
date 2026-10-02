@@ -124,7 +124,7 @@ function RefineModal({
                 ghost
                 onClick={() => {
                   closeModal('refine')
-                  openModal('settings')
+                  openModal('settings', { tab: 'AI & Figma' })
                 }}
               >
                 {'Open settings'}
