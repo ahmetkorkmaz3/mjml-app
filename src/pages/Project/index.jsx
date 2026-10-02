@@ -29,6 +29,7 @@ import { saveDialog, writeFile, fileExists } from 'helpers/fs'
 import Button from 'components/Button'
 import ButtonDropdown from 'components/Button/ButtonDropdown'
 import FilesList from 'components/FilesList'
+import TitleBar from 'components/TitleBar'
 
 import BackButton from './BackButton'
 import SendModal from './SendModal'
@@ -224,85 +225,89 @@ const ConnectedProjectPage = connect(
 
       return (
         <div className="fg-1 d-f fd-c o-n" tabIndex={0} ref={n => (this._page = n)}>
-          <div className="d-f p-10 r" style={{ zIndex: 2 }}>
-            <div className="fg-1 flow-h-10">
-              <BackButton projectName={projectName} />
-              <Button ghost onClick={this.openAddFileModal}>
-                <IconAdd className="mr-5" />
-                {'New file'}
-              </Button>
-              <Button ghost onClick={this.openFigmaImportModal}>
-                <FaFigma className="mr-5" />
-                {'Import from Figma'}
-              </Button>
-            </div>
-            <div className="d-f flow-h-10">
-              {preventAutoSave && [
-                <Button key="save" transparent onClick={() => this._editor.handleSave()}>
-                  <IconSave style={{ marginRight: 5 }} />
-                  {'Save'}
-                </Button>,
-              ]}
-              {isMJMLFile && [
-                <Button key="beautify" transparent onClick={this.handleBeautify}>
-                  <IconBeautify style={{ marginRight: 5 }} />
-                  {'Beautify'}
-                </Button>,
-                <Button key="refine" transparent onClick={this.openRefineModal}>
-                  <IconRefine style={{ marginRight: 5 }} />
-                  {'Refine with AI'}
-                </Button>,
-              ]}
-              <Button transparent onClick={this.handleOpenSettings}>
-                <IconBuild style={{ marginRight: 5 }} />
-                {'Templating'}
-              </Button>
-              <Button transparent onClick={this.handleOpenInBrowser}>
-                <FaFolderOpen style={{ marginRight: 5 }} />
-                {'Open'}
-              </Button>
-              {preview &&
-                preview.type === 'html' && [
-                  <Button key={'send'} transparent onClick={this.openSendModal}>
-                    <IconEmail style={{ marginRight: 5 }} />
-                    {'Send'}
+          <TitleBar
+            left={
+              <>
+                <BackButton projectName={projectName} />
+                <Button ghost onClick={this.openAddFileModal}>
+                  <IconAdd className="mr-5" />
+                  {'New file'}
+                </Button>
+                <Button ghost onClick={this.openFigmaImportModal}>
+                  <FaFigma className="mr-5" />
+                  {'Import from Figma'}
+                </Button>
+              </>
+            }
+            right={
+              <>
+                {preventAutoSave && [
+                  <Button key="save" transparent onClick={() => this._editor.handleSave()}>
+                    <IconSave style={{ marginRight: 5 }} />
+                    {'Save'}
                   </Button>,
-                  <ButtonDropdown
-                    ghost
-                    key={'export'}
-                    dropdownWidth={300}
-                    actions={[
-                      {
-                        icon: <IconCopy />,
-                        label: 'Copy HTML',
-                        desc: 'Copy the result HTML to clipboard',
-                        onClick: this.handleCopyHTML,
-                      },
-                      {
-                        icon: <IconCode />,
-                        label: 'Export to HTML file',
-                        desc: 'Save the result HTML file to disk',
-                        onClick: this.handleExportToHTML,
-                      },
-                      {
-                        icon: <IconCamera />,
-                        label: 'Screenshot',
-                        desc: 'Save a screenshot of mobile & desktop result',
-                        onClick: this.handleScreenshot,
-                      },
-                    ]}
-                  />,
                 ]}
-            </div>
-            <Button
-              className="ml-10"
-              ghost
-              onClick={this.openSettingsModal}
-              ref={n => (this._btnSettings = n)}
-            >
-              <FaCog />
-            </Button>
-          </div>
+                {isMJMLFile && [
+                  <Button key="beautify" transparent onClick={this.handleBeautify}>
+                    <IconBeautify style={{ marginRight: 5 }} />
+                    {'Beautify'}
+                  </Button>,
+                  <Button key="refine" transparent onClick={this.openRefineModal}>
+                    <IconRefine style={{ marginRight: 5 }} />
+                    {'Refine with AI'}
+                  </Button>,
+                ]}
+                <Button transparent onClick={this.handleOpenSettings}>
+                  <IconBuild style={{ marginRight: 5 }} />
+                  {'Templating'}
+                </Button>
+                <Button transparent onClick={this.handleOpenInBrowser}>
+                  <FaFolderOpen style={{ marginRight: 5 }} />
+                  {'Open'}
+                </Button>
+                {preview &&
+                  preview.type === 'html' && [
+                    <Button key={'send'} transparent onClick={this.openSendModal}>
+                      <IconEmail style={{ marginRight: 5 }} />
+                      {'Send'}
+                    </Button>,
+                    <ButtonDropdown
+                      ghost
+                      key={'export'}
+                      dropdownWidth={300}
+                      actions={[
+                        {
+                          icon: <IconCopy />,
+                          label: 'Copy HTML',
+                          desc: 'Copy the result HTML to clipboard',
+                          onClick: this.handleCopyHTML,
+                        },
+                        {
+                          icon: <IconCode />,
+                          label: 'Export to HTML file',
+                          desc: 'Save the result HTML file to disk',
+                          onClick: this.handleExportToHTML,
+                        },
+                        {
+                          icon: <IconCamera />,
+                          label: 'Screenshot',
+                          desc: 'Save a screenshot of mobile & desktop result',
+                          onClick: this.handleScreenshot,
+                        },
+                      ]}
+                    />,
+                  ]}
+                <Button
+                  className="ml-10"
+                  ghost
+                  onClick={this.openSettingsModal}
+                  ref={n => (this._btnSettings = n)}
+                >
+                  <FaCog />
+                </Button>
+              </>
+            }
+          />
 
           <div className="fg-1 d-f fd-c r" style={{ zIndex: 1 }}>
             <FilesList
