@@ -12,7 +12,12 @@ import * as fs from './fs'
 import * as mjml from './mjml'
 import sendEmail from './send-email'
 
-const EVENT_CHANNELS = ['redux-command', 'openPath', 'browser-window-focus']
+const EVENT_CHANNELS = [
+  'redux-command',
+  'openPath',
+  'browser-window-focus',
+  'figma-import-progress',
+]
 
 const api = {
   platform: process.platform,
@@ -34,6 +39,23 @@ const api = {
     compile: params => ipcRenderer.invoke('templating:compile', params),
   },
   sendEmail,
+
+  // Figma import: the main process keeps the keys and makes the requests
+  figma: {
+    import: params => ipcRenderer.invoke('figma:import', params),
+    refine: params => ipcRenderer.invoke('figma:refine', params),
+    cancel: () => ipcRenderer.invoke('figma:cancel'),
+    testConnection: figma => ipcRenderer.invoke('figma:testConnection', figma),
+  },
+  ai: {
+    testConnection: ai => ipcRenderer.invoke('ai:testConnection', ai),
+  },
+  // the renderer can set a secret and ask if it exists, it cannot read it
+  secrets: {
+    isAvailable: () => ipcRenderer.invoke('secrets:isAvailable'),
+    has: name => ipcRenderer.invoke('secrets:has', name),
+    set: (name, value) => ipcRenderer.invoke('secrets:set', name, value),
+  },
 
   storage: {
     get: key => ipcRenderer.invoke('storage:get', key),

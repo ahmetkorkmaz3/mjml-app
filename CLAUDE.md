@@ -18,13 +18,14 @@ yarn start           # run the compiled app from out/
 yarn lint            # ESLint (flat config in eslint.config.mjs)
 yarn prettier        # format the repository in place
 yarn prettier:check  # check the formatting
+yarn test            # Vitest unit tests (src/**/*.test.js)
 yarn dist            # compile, then package with electron-builder (output in release/)
 yarn dist:dir        # unpacked, unsigned build (CI uses this)
 yarn site            # dev server for the marketing site in site/
 ./deploy             # build the site and force-push it to the gh-pages branch
 ```
 
-The repository has no unit tests. CI (`.github/workflows/ci.yml`) runs `yarn lint`, `yarn prettier:check` and `yarn dist:dir` on macOS, Linux and Windows. A commit must pass `yarn lint` and `yarn prettier:check`.
+Unit tests (Vitest) cover the main process code of the Figma import. Tests are next to the code (`*.test.js`) and run in Node.js, so they do not import `electron`. CI (`.github/workflows/ci.yml`) runs `yarn lint`, `yarn prettier:check`, `yarn test` and `yarn dist:dir` on macOS, Linux and Windows. A commit must pass `yarn lint`, `yarn prettier:check` and `yarn test`.
 
 ## Architecture
 
@@ -60,6 +61,17 @@ Other points:
 ### Templating
 
 Each project can have one templating engine (`html` means none, `handlebars`, or `erb`) and a set of variables in YAML or JSON. The `settings.templating` array keeps these, with one entry for each `projectPath`. `pages/Project/PreviewSettings.jsx` edits them. `helpers/preview-content.js` (`compile`, run in the main process) applies them to the rendered HTML in `components/FilesList/FilePreview.jsx` and before a test email is sent in `pages/Project/SendModal.jsx` (Mailjet Send API v3.1, `node-mailjet`).
+
+### Figma import
+
+The Project page has "Import from Figma" (`pages/Project/FigmaImportModal.jsx`) and "Refine with AI" (`pages/Project/RefineModal.jsx`). All the work runs in the main process (`src/main/figma-import.js`):
+
+- `src/main/figma/`: reads a node from the Figma desktop MCP server (`mcp-source.js`, default `http://127.0.0.1:3845/mcp`) or from the REST API (`rest-source.js`, personal access token). Both return the same `Design` object.
+- `src/main/download-assets.js`: downloads the images into `images/` of the project. It never overwrites a file.
+- `src/main/ai/`: the Vercel AI SDK sends the design to the selected provider (`providers.js`, list in `src/data/aiProviders.js`). `generate-mjml.js` validates the result with `mjml2html`, sends the errors back for at most 2 fix rounds and runs one visual self-check (screenshot of the result next to the Figma screenshot).
+- `src/main/secrets.js`: API keys and the Figma token are encrypted with `safeStorage` in `secrets.json` in the app user data folder, not in `settings`. The renderer can set a secret and ask if it exists, it cannot read it.
+- Settings: `settings.ai` (`provider`, `model`, `baseURL`, `visualCheck`) and `settings.figma` (`source`, `mcpURL`), edited in the "AI & Figma" settings tab.
+- IPC returns `{ error: { code, message } }` instead of throwing. Progress goes to the renderer on the `figma-import-progress` channel.
 
 ### Build-time globals
 
