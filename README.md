@@ -7,9 +7,17 @@
 	<a href="https://github.com/ahmetkorkmaz3/mjml-app/releases">Download</a>
 </p>
 
-![screenshot](assets/screenshot.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshot-dark.png" />
+  <img alt="The MJML App editor with the live preview" src="assets/screenshot.png" />
+</picture>
 
 MJML App is a desktop editor for [MJML](https://mjml.io) emails, for macOS, Windows and Linux. It shows a live preview, exports HTML, sends test emails, and imports Figma designs with AI. It is a fork of [mjmlio/mjml-app](https://github.com/mjmlio/mjml-app).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/projects-dark.png" />
+  <img alt="The project list of MJML App" src="assets/projects.png" />
+</picture>
 
 See [CHANGELOG.md](CHANGELOG.md) for the changes of each release.
 
