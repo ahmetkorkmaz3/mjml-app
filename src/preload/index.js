@@ -17,6 +17,7 @@ const EVENT_CHANNELS = [
   'openPath',
   'browser-window-focus',
   'figma-import-progress',
+  'window-fullscreen',
 ]
 
 const api = {
