@@ -56,13 +56,13 @@ export default connect(
       autoFold: settings.getIn(['editor', 'autoFold']),
       foldLevel: settings.getIn(['editor', 'foldLevel']),
       highlightTag: settings.getIn(['editor', 'highlightTag']),
-      lightTheme: settings.getIn(['editor', 'lightTheme'], false),
+      isDark: state.theme === 'dark',
       errors: get(preview, 'errors', []),
       snippets: settings.get('snippets'),
       useTab: settings.getIn(['editor', 'useTab'], false),
       tabSize: settings.getIn(['editor', 'tabSize'], 2),
       indentSize: settings.getIn(['editor', 'indentSize'], 2),
-      fontSize: settings.getIn(['editor', 'fontSize'], null),
+      fontSize: settings.getIn(['editor', 'fontSize'], 13),
       preventAutoSave: settings.getIn(['editor', 'preventAutoSave'], false),
     }
   },
@@ -125,7 +125,8 @@ export default connect(
       if (
         prevProps.wrapLines !== this.props.wrapLines ||
         prevProps.highlightTag !== this.props.highlightTag ||
-        prevProps.lightTheme !== this.props.lightTheme ||
+        prevProps.isDark !== this.props.isDark ||
+        prevProps.fontSize !== this.props.fontSize ||
         prevProps.useTab !== this.props.useTab ||
         prevProps.tabSize !== this.props.tabSize ||
         prevProps.indentSize !== this.props.indentSize
@@ -162,9 +163,9 @@ export default connect(
     }
 
     getConfigurableExtensions() {
-      const { wrapLines, highlightTag, lightTheme, useTab, tabSize, indentSize } = this.props
+      const { wrapLines, highlightTag, isDark, fontSize, useTab, tabSize, indentSize } = this.props
       return {
-        theme: editorTheme(lightTheme),
+        theme: editorTheme(isDark, fontSize),
         lineWrapping: wrapLines ? EditorView.lineWrapping : [],
         matchingTags: highlightTag ? matchingTags : [],
         tabSize: EditorState.tabSize.of(tabSize),
@@ -441,16 +442,14 @@ export default connect(
     }
 
     render() {
-      const { disablePointer, onRef, fontSize } = this.props
+      const { disablePointer, onRef } = this.props
       const { isLoading } = this.state
-
-      const fontSizeClass = fontSize ? ` fontSize-${fontSize}` : ''
 
       onRef(this)
 
       return (
         <div
-          className={`FileEditor${fontSizeClass}`}
+          className="FileEditor"
           style={{
             pointerEvents: disablePointer ? 'none' : 'auto',
           }}

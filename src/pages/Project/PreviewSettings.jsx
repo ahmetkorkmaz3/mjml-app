@@ -31,7 +31,7 @@ function languageFor(editorMode) {
 export default connect(
   state => ({
     templating: state.settings.get('templating'),
-    lightTheme: state.settings.getIn(['editor', 'lightTheme'], false),
+    isDark: state.theme === 'dark',
   }),
   {
     addAlert,
@@ -148,7 +148,7 @@ export default connect(
     initEditor() {
       if (!this._container) return
 
-      const { lightTheme } = this.props
+      const { isDark } = this.props
       const { variables, editorMode } = this.currentProjectTemplating()
 
       this.destroyEditor()
@@ -177,7 +177,7 @@ export default connect(
             keymap.of([...historyKeymap, ...defaultKeymap]),
             EditorState.tabSize.of(2),
             this._language.of(languageFor(editorMode)),
-            editorTheme(lightTheme),
+            editorTheme(isDark),
             EditorView.updateListener.of(update => {
               if (update.docChanged) {
                 this.handleChangeVars()
