@@ -3,20 +3,14 @@ import path from 'node:path'
 import mjml2html from 'mjml'
 import migrate from 'mjml-migrate'
 
+import { WRAPPER_LINES, includePathFor, mapErrors, wrapIntoMJMLTags } from './mjml-helpers'
+
 const MAX_BUFFER = 10 * 1024 * 1024
 
-export function wrapIntoMJMLTags(content) {
-  return `<mjml>
-  <mj-body>
-    ${content}
-  </mj-body>
-</mjml>`
-}
-
-function run(cmd, args, stdin) {
+function run(cmd, args, { stdin, cwd } = {}) {
   return new Promise(resolve => {
     try {
-      const child = execFile(cmd, args, { maxBuffer: MAX_BUFFER }, (err, stdout, stderr) => {
+      const child = execFile(cmd, args, { maxBuffer: MAX_BUFFER, cwd }, (err, stdout, stderr) => {
         resolve({ err, stdout, stderr })
       })
       if (stdin !== undefined) {
@@ -28,6 +22,8 @@ function run(cmd, args, stdin) {
   })
 }
 
+const failure = message => ({ html: '', errors: [{ line: null, message, tagName: null }] })
+
 /**
  * Render MJML content to HTML.
  *
@@ -36,6 +32,7 @@ function run(cmd, args, stdin) {
  * - minify, keepComments
  * - useMjmlConfig, mjmlConfigPath: use a .mjmlconfig file for custom components
  * - preventAutoSave: the content is not saved, so send it through stdin
+ * - rootPath: the project folder, mj-include can read the files in it
  */
 export async function render(mjmlContent, filePath, options = {}) {
   const {
@@ -45,11 +42,13 @@ export async function render(mjmlContent, filePath, options = {}) {
     useMjmlConfig = false,
     mjmlConfigPath,
     preventAutoSave = false,
+    rootPath,
   } = options
 
   const isFullDocument = mjmlContent.trim().startsWith('<mjml')
   const content = isFullDocument ? mjmlContent : wrapIntoMJMLTags(mjmlContent)
   const configPath = useMjmlConfig ? mjmlConfigPath || path.dirname(filePath) : null
+  const includePath = includePathFor(filePath, rootPath)
 
   try {
     if (mjmlPath) {
@@ -60,15 +59,21 @@ export async function render(mjmlContent, filePath, options = {}) {
         ...(minify ? ['--config.minify=true'] : []),
         ...(keepComments ? [] : ['--config.keepComments=false']),
         ...(configPath ? [`--config.mjmlConfigPath=${configPath}`] : []),
+        ...(includePath ? [`--config.includePath=${JSON.stringify(includePath)}`] : []),
       ]
 
+      // with stdin, filePath and cwd let mj-include find the files
       const res =
         !isFullDocument || preventAutoSave
-          ? await run(mjmlPath, [...args, '-i'], content)
-          : await run(mjmlPath, [filePath, ...args])
+          ? await run(mjmlPath, [...args, `--config.filePath=${filePath}`, '-i'], {
+              stdin: content,
+              cwd: path.dirname(filePath),
+            })
+          : await run(mjmlPath, [filePath, ...args], { cwd: path.dirname(filePath) })
 
       if (res.err) {
-        return { html: '', errors: [] }
+        const stderr = (res.stderr || '').trim()
+        return failure(stderr || res.err.message)
       }
       return { html: res.stdout, errors: [] }
     }
@@ -79,15 +84,17 @@ export async function render(mjmlContent, filePath, options = {}) {
       keepComments,
       // mj-include is used by projects to share a header or a footer
       ignoreIncludes: false,
+      ...(includePath ? { includePath } : {}),
       ...(configPath ? { mjmlConfigPath: configPath } : {}),
     })
 
     return {
       html: res.html || '',
-      errors: (res.errors || []).map(({ line, message, tagName }) => ({ line, message, tagName })),
+      errors: mapErrors(res.errors, { lineOffset: isFullDocument ? 0 : WRAPPER_LINES }),
     }
   } catch (e) {
-    return { html: '', errors: [] }
+    // a malformed document: show why there is no preview
+    return failure(e.message || String(e))
   }
 }
 

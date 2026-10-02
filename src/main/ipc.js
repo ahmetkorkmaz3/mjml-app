@@ -15,6 +15,7 @@ import storage from 'electron-json-storage'
 
 import { toErrorResult } from './errors'
 import { createFigmaImporter } from './figma-import'
+import { migrateMailjetKeys, sendTestEmail } from './mailjet'
 import { cleanUpScreenshot, renderScreenshot, takeScreenshot } from './screenshot'
 import { createSecretStore, SECRET_NAMES } from './secrets'
 import { compile } from './templating'
@@ -39,8 +40,35 @@ export function openExternal(url) {
 }
 
 export function registerIpcHandlers({ onThemeChange, onMenuContext, onAppMenu }) {
-  ipcMain.handle('storage:get', (e, key) => storageGet(key))
-  ipcMain.handle('storage:set', (e, key, value) => storageSet(key, value))
+  const secrets = createSecretStore({
+    filePath: join(app.getPath('userData'), 'secrets.json'),
+    safeStorage,
+  })
+
+  // The settings never keep the Mailjet keys in plain text: the keys of the
+  // old versions go to the secret store the first time the settings are read.
+  async function withoutMailjetKeys(settings) {
+    try {
+      return await migrateMailjetKeys(settings, secrets)
+    } catch (err) {
+      return settings
+    }
+  }
+
+  ipcMain.handle('storage:get', async (e, key) => {
+    const value = await storageGet(key)
+    if (key !== 'settings') {
+      return value
+    }
+    const migrated = await withoutMailjetKeys(value)
+    if (migrated !== value) {
+      await storageSet(key, migrated)
+    }
+    return migrated
+  })
+  ipcMain.handle('storage:set', async (e, key, value) =>
+    storageSet(key, key === 'settings' ? await withoutMailjetKeys(value) : value),
+  )
 
   ipcMain.handle('dialog:open', async (e, options) => {
     const win = BrowserWindow.fromWebContents(e.sender)
@@ -93,10 +121,6 @@ export function registerIpcHandlers({ onThemeChange, onMenuContext, onAppMenu })
   )
   ipcMain.handle('screenshot:cleanUp', (e, workingDirectory) => cleanUpScreenshot(workingDirectory))
 
-  const secrets = createSecretStore({
-    filePath: join(app.getPath('userData'), 'secrets.json'),
-    safeStorage,
-  })
   const importer = createFigmaImporter({ secrets, renderScreenshot })
   const unknownSecret = { error: { code: 'UNKNOWN_SECRET', message: 'Unknown secret.' } }
 
@@ -122,6 +146,16 @@ export function registerIpcHandlers({ onThemeChange, onMenuContext, onAppMenu })
     try {
       await secrets.set(name, value)
       return { ok: true }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  // the main process reads the Mailjet keys, the renderer cannot
+  ipcMain.handle('mailjet:send', async (e, params) => {
+    try {
+      const settings = await storageGet('settings')
+      return await sendTestEmail(params, { secrets, settings })
     } catch (err) {
       return toErrorResult(err)
     }

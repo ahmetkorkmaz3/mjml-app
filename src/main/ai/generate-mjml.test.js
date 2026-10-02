@@ -2,7 +2,7 @@ import { APICallError } from 'ai'
 import { MockLanguageModelV4 } from 'ai/test'
 import { describe, expect, it, vi } from 'vitest'
 
-import { generateMjml, refineMjml } from './generate-mjml'
+import { MAX_OUTPUT_TOKENS, generateMjml, refineMjml } from './generate-mjml'
 import { validateMjml } from './validate-mjml'
 
 const VALID =
@@ -60,6 +60,12 @@ describe('generateMjml', () => {
     expect(res.warnings).toEqual([])
     expect(res.usage).toEqual({ inputTokens: 10, outputTokens: 5, calls: 1 })
     expect(hasImage(calls[0])).toBe(true)
+  })
+
+  it('sets a limit for the output tokens', async () => {
+    const { model, calls } = mockModel([block(VALID)])
+    await generateMjml({ ...base, model })
+    expect(calls[0].maxOutputTokens).toBe(MAX_OUTPUT_TOKENS)
   })
 
   it('sends the validation errors back and uses the fixed version', async () => {
