@@ -175,6 +175,13 @@ function AIFigmaSettings({ ai, figma, updateSettings }) {
           <div className="flow-v-10">
             <div>{'Figma desktop MCP server (open the file in the Figma desktop app)'}</div>
             {figma.get('source') === 'mcp' && (
+              <div className="t-small">
+                {
+                  'Each import uses 4 MCP tool calls. Figma limits MCP calls on the Starter plan and on View and Collab seats.'
+                }
+              </div>
+            )}
+            {figma.get('source') === 'mcp' && (
               <input
                 className="fg-1"
                 value={figma.get('mcpURL')}

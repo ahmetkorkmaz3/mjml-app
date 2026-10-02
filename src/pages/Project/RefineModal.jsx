@@ -9,7 +9,7 @@ import { isModalOpened, closeModal, openModal } from 'reducers/modals'
 import Modal from 'components/Modal'
 import Button from 'components/Button'
 
-import { STEP_LABELS } from './FigmaImportModal'
+import { SETTINGS_CODES, STEP_LABELS } from './FigmaImportModal'
 
 function RefineModal({ isOpened, filePath, getEditor, ai, closeModal, openModal, addAlert }) {
   const [instruction, setInstruction] = useState('')
@@ -27,17 +27,30 @@ function RefineModal({ isOpened, filePath, getEditor, ai, closeModal, openModal,
       return
     }
     const editor = getEditor()
+    if (!editor) {
+      setError({
+        code: 'UNKNOWN',
+        message: 'The editor is not ready. Open the file and try again.',
+      })
+      return
+    }
     setError(null)
     setProgress({ step: 'generate' })
     isRunning.current = true
-    const res = await api.figma.refine({
-      filePath,
-      content: editor.getContent(),
-      instruction: instruction.trim(),
-      ai: ai.toJS(),
-    })
-    isRunning.current = false
-    setProgress(null)
+    let res
+    try {
+      res = await api.figma.refine({
+        filePath,
+        content: editor.getContent(),
+        instruction: instruction.trim(),
+        ai: ai.toJS(),
+      })
+    } catch (err) {
+      res = { error: { code: 'UNKNOWN', message: err.message } }
+    } finally {
+      isRunning.current = false
+      setProgress(null)
+    }
 
     if (res.error) {
       if (res.error.code !== 'CANCELLED') {
@@ -68,7 +81,7 @@ function RefineModal({ isOpened, filePath, getEditor, ai, closeModal, openModal,
   }
 
   return (
-    <Modal isOpened={isOpened} onClose={handleClose}>
+    <Modal isOpened={isOpened} onClose={progress ? () => {} : handleClose}>
       <div className="Modal--label">{'Refine with AI'}</div>
 
       <form className="flow-v-20" onSubmit={handleSubmit}>
@@ -96,7 +109,7 @@ function RefineModal({ isOpened, filePath, getEditor, ai, closeModal, openModal,
               <IconError className="mr-5 mb-5" />
               {error.message}
             </div>
-            {error.code.startsWith('AI_') && (
+            {SETTINGS_CODES.includes(error.code) && (
               <Button
                 ghost
                 onClick={() => {
