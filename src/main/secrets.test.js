@@ -75,4 +75,45 @@ describe('createSecretStore', () => {
     expect(await store.get('ai.openai')).toBe('aaaa1')
     expect(await store.get('figma.token')).toBe('bbbb2')
   })
+
+  it('recovers from a failed set and succeeds on the next call', async () => {
+    let encryptionAvailable = false
+    const store = createSecretStore({
+      filePath,
+      safeStorage: {
+        isEncryptionAvailable: () => encryptionAvailable,
+        encryptString: text => Buffer.from([...text].reverse().join(''), 'utf8'),
+        decryptString: buffer => [...buffer.toString('utf8')].reverse().join(''),
+      },
+    })
+
+    await expect(store.set('ai.openai', 'sk-123456')).rejects.toMatchObject({
+      code: 'ENCRYPTION_UNAVAILABLE',
+    })
+
+    encryptionAvailable = true
+    await store.set('ai.openai', 'sk-123456')
+    expect(await store.get('ai.openai')).toBe('sk-123456')
+  })
+
+  it('rejects with SECRETS_UNREADABLE when the file contains non-object JSON', async () => {
+    await writeFile(filePath, 'null', 'utf8')
+    const store = createSecretStore({ filePath, safeStorage: fakeSafeStorage() })
+
+    await expect(store.get('ai.openai')).rejects.toMatchObject({
+      code: 'SECRETS_UNREADABLE',
+    })
+    await expect(store.set('ai.openai', 'sk-123456')).rejects.toMatchObject({
+      code: 'SECRETS_UNREADABLE',
+    })
+  })
+
+  it('rejects with SECRETS_UNREADABLE when the file contains a JSON array', async () => {
+    await writeFile(filePath, '[]', 'utf8')
+    const store = createSecretStore({ filePath, safeStorage: fakeSafeStorage() })
+
+    await expect(store.get('ai.openai')).rejects.toMatchObject({
+      code: 'SECRETS_UNREADABLE',
+    })
+  })
 })

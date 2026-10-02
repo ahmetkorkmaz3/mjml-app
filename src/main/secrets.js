@@ -18,10 +18,17 @@ export function createSecretStore({ filePath, safeStorage }) {
 
   async function load() {
     try {
-      return JSON.parse(await readFile(filePath, 'utf8'))
+      const data = JSON.parse(await readFile(filePath, 'utf8'))
+      if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+        throw new ImportError('SECRETS_UNREADABLE', 'The app could not read the saved keys file.')
+      }
+      return data
     } catch (err) {
       if (err.code === 'ENOENT') {
         return {}
+      }
+      if (err instanceof ImportError) {
+        throw err
       }
       throw new ImportError('SECRETS_UNREADABLE', 'The app could not read the saved keys file.')
     }
@@ -39,7 +46,7 @@ export function createSecretStore({ filePath, safeStorage }) {
     isAvailable: () => safeStorage.isEncryptionAvailable(),
 
     async set(name, value) {
-      writeQueue = writeQueue.then(async () => {
+      const run = writeQueue.then(async () => {
         const data = await load()
         if (value) {
           if (!safeStorage.isEncryptionAvailable()) {
@@ -56,7 +63,8 @@ export function createSecretStore({ filePath, safeStorage }) {
         await writeFile(tmpPath, JSON.stringify(data), { mode: 0o600 })
         await rename(tmpPath, filePath)
       })
-      return writeQueue
+      writeQueue = run.catch(() => {})
+      return run
     },
 
     async has(name) {
