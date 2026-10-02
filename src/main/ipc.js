@@ -1,6 +1,16 @@
 import { promisify } from 'node:util'
 import { join } from 'node:path'
-import { app, BrowserWindow, clipboard, dialog, ipcMain, safeStorage, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  ipcMain,
+  Menu,
+  nativeTheme,
+  safeStorage,
+  shell,
+} from 'electron'
 import storage from 'electron-json-storage'
 
 import { toErrorResult } from './errors'
@@ -8,6 +18,8 @@ import { createFigmaImporter } from './figma-import'
 import { cleanUpScreenshot, renderScreenshot, takeScreenshot } from './screenshot'
 import { createSecretStore, SECRET_NAMES } from './secrets'
 import { compile } from './templating'
+import { toPopupTemplate } from './popup-menu'
+import { normalizeThemeSetting } from './theme'
 
 const storageGet = promisify(storage.get)
 const storageSet = promisify(storage.set)
@@ -26,7 +38,7 @@ function openExternal(url) {
   }
 }
 
-export function registerIpcHandlers() {
+export function registerIpcHandlers({ onThemeChange, onMenuContext, onAppMenu }) {
   ipcMain.handle('storage:get', (e, key) => storageGet(key))
   ipcMain.handle('storage:set', (e, key, value) => storageSet(key, value))
 
@@ -49,6 +61,28 @@ export function registerIpcHandlers() {
   ipcMain.handle('shell:showItemInFolder', (e, p) => shell.showItemInFolder(p))
   ipcMain.handle('shell:openPath', (e, p) => shell.openPath(p))
   ipcMain.handle('shell:trashItem', (e, p) => shell.trashItem(p))
+
+  ipcMain.handle('theme:set', (e, setting) => {
+    nativeTheme.themeSource = normalizeThemeSetting(setting)
+    onThemeChange(nativeTheme.themeSource)
+  })
+
+  ipcMain.handle('menu:setContext', (e, context) => onMenuContext(context))
+  ipcMain.handle('menu:popupApp', e => onAppMenu(BrowserWindow.fromWebContents(e.sender)))
+
+  // shows a native context menu, resolves with the id of the chosen item or null
+  ipcMain.handle(
+    'menu:popup',
+    (e, items) =>
+      new Promise(resolve => {
+        const menu = Menu.buildFromTemplate(toPopupTemplate(items, resolve))
+        menu.popup({
+          window: BrowserWindow.fromWebContents(e.sender),
+          // the click can come after the close event, so wait a little
+          callback: () => setTimeout(() => resolve(null), 100),
+        })
+      }),
+  )
 
   ipcMain.handle('templating:compile', (e, params) => compile(params))
 

@@ -2,8 +2,7 @@ import { Component } from 'react'
 import debounce from 'lodash/debounce'
 import { connect } from 'react-redux'
 import {
-  MdPhoneAndroid as IconMobile,
-  MdDesktopWindows as IconDesktop,
+  MdPalette as IconAppearance,
   MdClose as IconClose,
   MdSettingsApplications as IconMJMLEngine,
   MdFormatAlignLeft as IconEditor,
@@ -21,12 +20,13 @@ import TabsVertical, { TabItem } from 'components/TabsVertical'
 import SnippetForm from 'components/SnippetForm'
 import SnippetImports from 'components/SnippetImports'
 import SnippetsList from 'components/SnippetsList'
-import ButtonDropdown from 'components/Button/ButtonDropdown'
+import SegmentedControl from 'components/SegmentedControl'
 
 import { FaFigma } from 'react-icons/fa'
 import AIFigmaSettings from './AIFigmaSettings'
 import MJMLEngine from 'components/MJMLEngine'
 import MjmlConfigPath from 'components/MjmlConfigPath'
+import SettingRow from './SettingRow'
 
 import './style.scss'
 
@@ -89,196 +89,167 @@ export default connect(
       })
     }
 
+    numberInput(value, onChange, min = 1) {
+      return (
+        <input
+          type="number"
+          min={min}
+          value={value}
+          onChange={e => onChange(Number(e.target.value))}
+        />
+      )
+    }
+
     render() {
-      const { isOpened, settings } = this.props
+      const { isOpened, settings, updateSettings } = this.props
 
       const { sizes } = this.state
 
-      const editorWrapLines = settings.getIn(['editor', 'wrapLines'], true)
-      const editorHightlightTag = settings.getIn(['editor', 'highlightTag'], false)
-      const autoFold = settings.getIn(['editor', 'autoFold'], false)
-      const foldLevel = settings.getIn(['editor', 'foldLevel'], 1)
-      const editorLightTheme = settings.getIn(['editor', 'lightTheme'], false)
+      const editor = key => settings.getIn(['editor', key])
+      const theme = settings.getIn(['appearance', 'theme'], 'system')
+      const fontSize = settings.getIn(['editor', 'fontSize'], 13)
       const minifyOutput = settings.getIn(['mjml', 'minify'], false)
       const beautifyOutput = settings.getIn(['mjml', 'beautify'], false)
       const keepCommentsOutput = settings.getIn(['mjml', 'keepComments'], true)
-      const editorUseTab = settings.getIn(['editor', 'useTab'], false)
-      const editorTabSize = settings.getIn(['editor', 'tabSize'], 2)
-      const editorIndentSize = settings.getIn(['editor', 'indentSize'], 2)
       const checkForRelativePaths = settings.getIn(['mjml', 'checkForRelativePaths'], false)
-      const preventAutoSave = settings.getIn(['editor', 'preventAutoSave'], false)
 
       return (
-        <Modal
-          noUI
-          isOpened={isOpened}
-          onClose={this.handleClose}
-          className="SettingsModal p-10 d-f fd-c"
-        >
-          <div className="d-f ai-c mb-20">
-            <Button transparent onClick={this.handleClose} className="ml-auto">
-              <IconClose />
+        <Modal size="lg" isOpened={isOpened} onClose={this.handleClose} className="SettingsModal">
+          <div className="Modal--label SettingsModal--header">
+            {'Settings'}
+            <Button variant="ghost" size="sm" icon aria-label="Close" onClick={this.handleClose}>
+              <IconClose size={16} />
             </Button>
           </div>
 
-          <div className="fg-1 mb-20 r">
+          <div className="SettingsModal--sections">
             <TabsVertical>
-              <TabItem title="MJML" icon={IconMJMLEngine}>
-                <MJMLEngine />
-                <div className="mt-10">{'Output:'}</div>
-                <CheckBox
-                  className="mt-10"
-                  value={minifyOutput}
-                  onChange={this.changeMJMLSetting('minify')}
-                >
-                  {'Minify HTML output'}
-                </CheckBox>
-                <CheckBox value={beautifyOutput} onChange={this.changeMJMLSetting('beautify')}>
-                  {'Beautify HTML output'}
-                </CheckBox>
-                <CheckBox
-                  value={keepCommentsOutput}
-                  onChange={this.changeMJMLSetting('keepComments')}
-                >
-                  {'Preserve HTML comments in output'}
-                </CheckBox>
-                <CheckBox
-                  className="tooltip-trigger"
-                  value={checkForRelativePaths}
-                  onChange={this.changeMJMLSetting('checkForRelativePaths')}
-                >
-                  {'Warn for relative paths on HTML export'}
-                  <small className="tooltip tooltip-up">
-                    Relative Paths like /image.jpg are usually not supported in Email Clients. This
-                    setting warns you if such are found in the code.
-                  </small>
-                </CheckBox>
-                <MjmlConfigPath />
+              <TabItem title="Appearance" icon={IconAppearance}>
+                <div className="SettingsSection--title">{'Appearance'}</div>
+                <SettingRow label="Theme" help="System follows the appearance of your computer.">
+                  <SegmentedControl
+                    value={theme}
+                    onChange={v => updateSettings(st => st.setIn(['appearance', 'theme'], v))}
+                    options={[
+                      { value: 'system', label: 'System' },
+                      { value: 'light', label: 'Light' },
+                      { value: 'dark', label: 'Dark' },
+                    ]}
+                  />
+                </SettingRow>
+                <SettingRow label="Editor font size">
+                  <select
+                    value={fontSize}
+                    onChange={e => this.changeEditorSetting('fontSize')(Number(e.target.value))}
+                  >
+                    {[12, 13, 14, 15, 16, 18].map(size => (
+                      <option key={size} value={size}>{`${size} px`}</option>
+                    ))}
+                  </select>
+                </SettingRow>
               </TabItem>
 
               <TabItem title="Editor" icon={IconEditor}>
-                <CheckBox
-                  value={editorLightTheme}
-                  onChange={this.changeEditorSetting('lightTheme')}
-                >
-                  {'Use high-contrast theme'}
-                </CheckBox>
-                <CheckBox value={editorWrapLines} onChange={this.changeEditorSetting('wrapLines')}>
-                  {'Wrap lines'}
-                </CheckBox>
-                <CheckBox
-                  value={editorHightlightTag}
-                  onChange={this.changeEditorSetting('highlightTag')}
-                >
-                  {'Highlight matching tag'}
-                </CheckBox>
-                <CheckBox value={autoFold} onChange={this.changeEditorSetting('autoFold')}>
-                  <div>{'Auto fold lines when opening file'}</div>
-                  <div className="mt-5">
-                    {'Fold level:'}
-                    <input
-                      className="ml-5"
-                      type="number"
-                      min={1}
-                      style={{ width: 80 }}
-                      value={foldLevel}
-                      onClick={e => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                      }}
-                      onChange={e => this.changeEditorSetting('foldLevel')(Number(e.target.value))}
-                    />
-                  </div>
-                </CheckBox>
-                <CheckBox value={editorUseTab} onChange={this.changeEditorSetting('useTab')}>
-                  <div>{'User tab character'}</div>
-                  <div className="mt-5">
-                    {'Tab size:'}
-                    <input
-                      className="ml-5"
-                      type="number"
-                      min={1}
-                      style={{ width: 80 }}
-                      value={editorTabSize}
-                      onClick={e => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                      }}
-                      onChange={e => this.changeEditorSetting('tabSize')(Number(e.target.value))}
-                    />
-                  </div>
-                </CheckBox>
-                <div className="mt-5">
-                  {'Indent size:'}
-                  <input
-                    className="ml-5"
-                    type="number"
-                    min={1}
-                    style={{ width: 80 }}
-                    value={editorIndentSize}
-                    onClick={e => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                    }}
-                    onChange={e => this.changeEditorSetting('indentSize')(Number(e.target.value))}
+                <div className="SettingsSection--title">{'Editor'}</div>
+                <SettingRow label="Wrap lines">
+                  <CheckBox
+                    value={editor('wrapLines') !== false}
+                    onChange={this.changeEditorSetting('wrapLines')}
                   />
-                </div>
-                <div className="mt-5">
-                  {'Font size:'}
-                  <ButtonDropdown
-                    dropdownClassName="position-auto"
-                    ghost
-                    dropdownWidth={200}
-                    actions={[12, 14, 15, 16, 18].map(size => ({
-                      icon: null,
-                      label: `${size}px`,
-                      desc: '',
-                      onClick: () => this.changeEditorSetting('fontSize')(size),
-                    }))}
+                </SettingRow>
+                <SettingRow label="Highlight the matching tag">
+                  <CheckBox
+                    value={!!editor('highlightTag')}
+                    onChange={this.changeEditorSetting('highlightTag')}
                   />
-                </div>
-                <CheckBox
-                  value={preventAutoSave}
-                  onChange={this.changeEditorSetting('preventAutoSave')}
+                </SettingRow>
+                <SettingRow
+                  label="Fold lines when a file opens"
+                  help="The editor folds the tags deeper than the fold level."
                 >
-                  {'Don’t auto-save on change'}
-                </CheckBox>
+                  {this.numberInput(
+                    editor('foldLevel') || 1,
+                    this.changeEditorSetting('foldLevel'),
+                  )}
+                  <CheckBox
+                    value={!!editor('autoFold')}
+                    onChange={this.changeEditorSetting('autoFold')}
+                  />
+                </SettingRow>
+                <SettingRow label="Indent with tabs" help="The tab size sets the width of a tab.">
+                  {this.numberInput(editor('tabSize') || 2, this.changeEditorSetting('tabSize'))}
+                  <CheckBox
+                    value={!!editor('useTab')}
+                    onChange={this.changeEditorSetting('useTab')}
+                  />
+                </SettingRow>
+                <SettingRow label="Indent size">
+                  {this.numberInput(
+                    editor('indentSize') || 2,
+                    this.changeEditorSetting('indentSize'),
+                  )}
+                </SettingRow>
+                <SettingRow
+                  label="Save automatically"
+                  help="When this is off, use File › Save to write the file."
+                >
+                  <CheckBox
+                    value={!editor('preventAutoSave')}
+                    onChange={v => this.changeEditorSetting('preventAutoSave')(!v)}
+                  />
+                </SettingRow>
               </TabItem>
 
-              <TabItem title="Preview" className="flow-v-10" icon={IconPreview}>
-                <div className="d-f ai-c flow-h-5">
-                  <IconMobile size={20} />
-                  <input
-                    type="number"
-                    min={200}
-                    style={{ width: 80 }}
-                    value={sizes.mobile}
-                    onChange={e => this.handleChangeSize('mobile', e.target.value)}
+              <TabItem title="MJML" icon={IconMJMLEngine}>
+                <div className="SettingsSection--title">{'MJML'}</div>
+                <MJMLEngine />
+                <div className="SettingsSection--subtitle">{'HTML output'}</div>
+                <SettingRow label="Minify the HTML">
+                  <CheckBox value={minifyOutput} onChange={this.changeMJMLSetting('minify')} />
+                </SettingRow>
+                <SettingRow label="Beautify the HTML">
+                  <CheckBox value={beautifyOutput} onChange={this.changeMJMLSetting('beautify')} />
+                </SettingRow>
+                <SettingRow label="Keep the HTML comments">
+                  <CheckBox
+                    value={keepCommentsOutput}
+                    onChange={this.changeMJMLSetting('keepComments')}
                   />
-                  <span>{'Mobile size'}</span>
-                </div>
+                </SettingRow>
+                <SettingRow
+                  label="Warn about relative paths on export"
+                  help="Email clients do not load relative paths like /image.jpg."
+                >
+                  <CheckBox
+                    value={checkForRelativePaths}
+                    onChange={this.changeMJMLSetting('checkForRelativePaths')}
+                  />
+                </SettingRow>
+                <div className="SettingsSection--subtitle">{'Configuration'}</div>
+                <MjmlConfigPath />
+              </TabItem>
 
-                <div className="d-f ai-c flow-h-5">
-                  <IconDesktop size={20} />
-                  <input
-                    type="number"
-                    min={200}
-                    style={{ width: 80 }}
-                    value={sizes.desktop}
-                    onChange={e => this.handleChangeSize('desktop', e.target.value)}
-                  />
-                  <span>{'Desktop size'}</span>
-                </div>
+              <TabItem title="Preview" icon={IconPreview}>
+                <div className="SettingsSection--title">{'Preview'}</div>
+                <SettingRow label="Desktop width" help="In pixels.">
+                  {this.numberInput(sizes.desktop, v => this.handleChangeSize('desktop', v), 200)}
+                </SettingRow>
+                <SettingRow label="Mobile width" help="In pixels.">
+                  {this.numberInput(sizes.mobile, v => this.handleChangeSize('mobile', v), 200)}
+                </SettingRow>
               </TabItem>
 
               <TabItem title="AI & Figma" className="flow-v-10" icon={FaFigma}>
+                <div className="SettingsSection--title">{'AI & Figma'}</div>
                 <AIFigmaSettings />
               </TabItem>
 
               <TabItem title="Snippets" className="d-b" icon={IconCode}>
-                <h1 className="c-white">{'Create and manage code snippets'}</h1>
-                <p className="mt-10">{'Type a trigger and hit tab to expand it in the editor'}</p>
-                <div className="Snippets d-f">
+                <div className="SettingsSection--title">{'Snippets'}</div>
+                <p className="t-small">
+                  {'Type a trigger and press Tab to expand it in the editor.'}
+                </p>
+                <div className="Snippets d-f mt-10">
                   <div className="fg-1">
                     <SnippetForm />
                     <SnippetImports />

@@ -181,12 +181,12 @@ function FigmaImportModal({ isOpened, rootPath, ai, figma, closeModal, openModal
             </div>
             <div className="d-f flow-h-10">
               {SETTINGS_CODES.includes(error.code) && (
-                <Button ghost onClick={openSettings}>
+                <Button variant="secondary" onClick={openSettings}>
                   {'Open settings'}
                 </Button>
               )}
               {REST_FALLBACK_CODES.includes(error.code) && hasToken && (
-                <Button ghost onClick={() => run('rest')}>
+                <Button variant="secondary" onClick={() => run('rest')}>
                   {'Try REST'}
                 </Button>
               )}
@@ -199,7 +199,7 @@ function FigmaImportModal({ isOpened, rootPath, ai, figma, closeModal, openModal
         <Button primary onClick={handleSubmit} disabled={!canSubmit}>
           {'Import'}
         </Button>
-        <Button transparent onClick={progress ? () => api.figma.cancel() : handleClose}>
+        <Button variant="secondary" onClick={progress ? () => api.figma.cancel() : handleClose}>
           {progress ? 'Stop' : 'Cancel'}
         </Button>
       </div>

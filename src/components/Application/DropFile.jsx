@@ -7,9 +7,9 @@ export default function DropFile({ isVisible, ...props }) {
       <div className="DropFile--border" />
       <div className="d-f fd-c jc-c ai-c" style={{ pointerEvents: 'none' }}>
         <div className="DropFile--icon">
-          <IconDrop className="mb-20" size={100} />
+          <IconDrop className="mb-10" size={48} />
         </div>
-        <div className="DropFile--label">{'Drop here'}</div>
+        <div className="DropFile--label">{'Drop an .mjml file or a folder to open it'}</div>
       </div>
     </div>
   )

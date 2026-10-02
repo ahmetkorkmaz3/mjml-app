@@ -1,7 +1,6 @@
 import { Component } from 'react'
 import { path } from 'helpers/api'
 import { connect } from 'react-redux'
-import { MdInfo as IconInfo } from 'react-icons/md'
 
 import { isModalOpened, getModalProps, closeModal } from 'reducers/modals'
 
@@ -29,7 +28,8 @@ export default connect(
       return (
         <ConfirmModal
           isOpened={isOpened}
-          yepCTA="Remove file"
+          danger
+          yepCTA="Move to Trash"
           nopCTA="Cancel"
           onCancel={this.handleClose}
           onConfirm={() => {
@@ -37,11 +37,8 @@ export default connect(
             window.requestIdleCallback(this.handleClose)
           }}
         >
-          <h2 className="mb-20">{'Remove file?'}</h2>
-          <div className="d-f ai-c t-small">
-            <IconInfo className="mr-5" size={20} />
-            {"This can't be undone."}
-          </div>
+          <h2 className="mb-10">{`Move “${file ? file.name : ''}” to the trash?`}</h2>
+          <p className="t-small">{'You can get the file back from the trash.'}</p>
         </ConfirmModal>
       )
     }

@@ -25,7 +25,7 @@ yarn site            # dev server for the marketing site in site/
 ./deploy             # build the site and force-push it to the gh-pages branch
 ```
 
-Unit tests (Vitest) cover the main process code of the Figma import. Tests are next to the code (`*.test.js`) and run in Node.js, so they do not import `electron`. CI (`.github/workflows/ci.yml`) runs `yarn lint`, `yarn prettier:check`, `yarn test` and `yarn dist:dir` on macOS, Linux and Windows. A commit must pass `yarn lint`, `yarn prettier:check` and `yarn test`.
+Unit tests (Vitest) cover the main process code of the Figma import and of the window and menus, and the pure renderer helpers and reducers. A tested renderer module must not import `helpers/api`, because it reads `window`. Tests are next to the code (`*.test.js`) and run in Node.js, so they do not import `electron`. CI (`.github/workflows/ci.yml`) runs `yarn lint`, `yarn prettier:check`, `yarn test` and `yarn dist:dir` on macOS, Linux and Windows. A commit must pass `yarn lint`, `yarn prettier:check` and `yarn test`.
 
 ## Architecture
 
@@ -43,7 +43,12 @@ Other points:
 - **Routing**: `src/router/index.jsx` creates a hash router. `pages/Home` is the project list. `pages/Project` (`/project?path=...`) is the editor, the files list and the preview. Thunks navigate with `router.navigate()`.
 - **Persistence**: settings, projects and window state are saved with `electron-json-storage` in the main process (key `settings`), not in the project folders.
 - **Animations**: modals, alerts and transitions use CSS transitions (`components/Modal/useTransition.js`).
-- **Styles**: Sass with `@use` (no `@import`).
+- **Styles**: Sass with `@use` (no `@import`). All colors, sizes and shadows are CSS custom properties in `src/styles/tokens.scss`. Do not use fixed colors in components.
+- **Theme**: `settings.appearance.theme` is `system`, `light` or `dark`. `components/Application/useAppTheme.js` sets `data-theme` on `<html>`, puts the resolved theme in `state.theme` (for CodeMirror) and calls `theme:set`, so the main process sets `nativeTheme.themeSource`. The main process reads the stored theme before it creates the window, and the preload gives it to the first frame as `api.initialTheme`.
+- **Window**: the title bar is hidden (`hiddenInset` with vibrancy on macOS, `titleBarOverlay` on Windows and Linux). Each page puts its controls in `components/TitleBar`. `src/main/window-bounds.js` keeps the saved bounds on a connected display.
+- **Menu and commands**: `src/main/menu.js` builds the menu from the context of the page (`menu:setContext`). Each item sends a command name on `redux-command`. The pages register the handlers with `components/PageCommands.jsx` (`helpers/commands.js`). Context menus use `showContextMenu` (`helpers/contextMenu.js`, IPC `menu:popup`).
+- **Status bar**: `components/StatusBar` shows `state.editorStatus` (cursor, dirty state, render time) and the MJML errors of `state.preview`.
+- **Layout**: `settings.layout` keeps the sidebar width, the collapsed sidebar and preview, and the sort of the project list.
 
 ### MJML rendering pipeline
 
@@ -56,7 +61,7 @@ Other points:
 
 ### Editor
 
-`components/FileEditor` uses CodeMirror 6 with `@codemirror/lang-xml` and the MJML schema in `helpers/codemirror/mjml-schema.js` for autocompletion. Settings change the editor through compartments. Each file keeps its `EditorState` (history included) while the project is open. MJML validation errors show in the lint gutter.
+`components/FileEditor` uses CodeMirror 6 with `@codemirror/lang-xml` and the MJML schema in `helpers/codemirror/mjml-schema.js` for autocompletion. `helpers/codemirror/theme.js` builds the light and dark editor themes from the tokens. Settings and the app theme change the editor through compartments. Each file keeps its `EditorState` (history included) while the project is open. MJML validation errors show in the lint gutter.
 
 ### Templating
 

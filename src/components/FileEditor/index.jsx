@@ -10,7 +10,7 @@ import { copyLineDown, defaultKeymap, history, historyKeymap } from '@codemirror
 import { foldGutter, foldKeymap, indentOnInput, indentUnit } from '@codemirror/language'
 import { xml } from '@codemirror/lang-xml'
 import { lintGutter, setDiagnostics } from '@codemirror/lint'
-import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
+import { highlightSelectionMatches, openSearchPanel, searchKeymap } from '@codemirror/search'
 import { Compartment, EditorState } from '@codemirror/state'
 import {
   EditorView,
@@ -23,6 +23,7 @@ import {
 } from '@codemirror/view'
 
 import { addAlert } from 'reducers/alerts'
+import { setEditorStatus, resetEditorStatus } from 'reducers/editorStatus'
 
 import isOldSyntax from 'helpers/detectOldMJMLSyntax'
 import { elements as mjmlElements } from 'helpers/codemirror/mjml-schema'
@@ -33,6 +34,8 @@ import foldByLevel from 'helpers/codemirror/fold-by-level'
 import { migrateToMJML4 } from 'helpers/mjml'
 import { readFile, writeFile } from 'helpers/fs'
 import { setPreview } from 'actions/preview'
+import { updateProjectMtime } from 'actions/projects'
+import { path } from 'helpers/api'
 
 import './styles.scss'
 
@@ -55,19 +58,22 @@ export default connect(
       autoFold: settings.getIn(['editor', 'autoFold']),
       foldLevel: settings.getIn(['editor', 'foldLevel']),
       highlightTag: settings.getIn(['editor', 'highlightTag']),
-      lightTheme: settings.getIn(['editor', 'lightTheme'], false),
+      isDark: state.theme === 'dark',
       errors: get(preview, 'errors', []),
       snippets: settings.get('snippets'),
       useTab: settings.getIn(['editor', 'useTab'], false),
       tabSize: settings.getIn(['editor', 'tabSize'], 2),
       indentSize: settings.getIn(['editor', 'indentSize'], 2),
-      fontSize: settings.getIn(['editor', 'fontSize'], null),
+      fontSize: settings.getIn(['editor', 'fontSize'], 13),
       preventAutoSave: settings.getIn(['editor', 'preventAutoSave'], false),
     }
   },
   {
     setPreview,
     addAlert,
+    setEditorStatus,
+    resetEditorStatus,
+    updateProjectMtime,
   },
 )(
   class FileEditor extends Component {
@@ -122,7 +128,8 @@ export default connect(
       if (
         prevProps.wrapLines !== this.props.wrapLines ||
         prevProps.highlightTag !== this.props.highlightTag ||
-        prevProps.lightTheme !== this.props.lightTheme ||
+        prevProps.isDark !== this.props.isDark ||
+        prevProps.fontSize !== this.props.fontSize ||
         prevProps.useTab !== this.props.useTab ||
         prevProps.tabSize !== this.props.tabSize ||
         prevProps.indentSize !== this.props.indentSize
@@ -141,6 +148,8 @@ export default connect(
     }
 
     componentWillUnmount() {
+      cancelAnimationFrame(this._cursorFrame)
+      this.props.resetEditorStatus()
       this.handleChange.cancel()
       this.debounceWrite.flush()
       if (this._view) {
@@ -157,9 +166,9 @@ export default connect(
     }
 
     getConfigurableExtensions() {
-      const { wrapLines, highlightTag, lightTheme, useTab, tabSize, indentSize } = this.props
+      const { wrapLines, highlightTag, isDark, fontSize, useTab, tabSize, indentSize } = this.props
       return {
-        theme: editorTheme(lightTheme),
+        theme: editorTheme(isDark, fontSize),
         lineWrapping: wrapLines ? EditorView.lineWrapping : [],
         matchingTags: highlightTag ? matchingTags : [],
         tabSize: EditorState.tabSize.of(tabSize),
@@ -199,6 +208,9 @@ export default connect(
           EditorView.updateListener.of(update => {
             if (update.docChanged && !this._isSettingContent) {
               this.handleChange()
+            }
+            if (update.selectionSet || update.docChanged) {
+              this.scheduleCursorStatus()
             }
           }),
           c.theme.of(conf.theme),
@@ -261,6 +273,8 @@ export default connect(
         this._isSettingContent = false
         this._contentFileName = fileName
         this._lastWritten[fileName] = content
+        this.updateDirty()
+        this.scheduleCursorStatus()
 
         // fold lines on mjml files, based on settings
         const { autoFold, foldLevel } = this.props
@@ -300,6 +314,8 @@ export default connect(
       try {
         await writeFile(fileName, mjml)
         this._lastWritten[fileName] = mjml
+        this.updateDirty()
+        this.handleWritten(fileName)
         addAlert('File successfully saved', 'success')
       } catch (e) {
         addAlert('Could not save file', 'error')
@@ -326,8 +342,50 @@ export default connect(
         setPreview(fileName, mjml)
       }
 
+      this.updateDirty()
       window.requestIdleCallback(this.detectOldSyntax)
     }, 200)
+
+    // one dispatch for each frame at most
+    scheduleCursorStatus = () => {
+      if (this._cursorFrame) {
+        return
+      }
+      this._cursorFrame = requestAnimationFrame(() => {
+        this._cursorFrame = null
+        if (!this._view) {
+          return
+        }
+        const { state } = this._view
+        const head = state.selection.main.head
+        const line = state.doc.lineAt(head)
+        this.props.setEditorStatus({ line: line.number, col: head - line.from + 1 })
+      })
+    }
+
+    // the file has changes that are not on the disk (only without auto-save)
+    updateDirty = () => {
+      const fileName = this._contentFileName
+      if (!this._view || !fileName) {
+        return
+      }
+      const isDirty =
+        !!this.props.preventAutoSave && this.getContent() !== this._lastWritten[fileName]
+      if (isDirty !== this._isDirty) {
+        this._isDirty = isDirty
+        this.props.setEditorStatus({ isDirty })
+      }
+    }
+
+    goToLine = lineNumber => {
+      if (!this._view) {
+        return
+      }
+      const { doc } = this._view.state
+      const line = doc.line(Math.min(Math.max(1, lineNumber), doc.lines))
+      this._view.dispatch({ selection: { anchor: line.from }, scrollIntoView: true })
+      this._view.focus()
+    }
 
     getContent = () => {
       return this._view.state.doc.toString()
@@ -365,6 +423,15 @@ export default connect(
       }
       await writeFile(fileName, mjml)
       this._lastWritten[fileName] = mjml
+      this.updateDirty()
+      this.handleWritten(fileName)
+    }
+
+    // the card of the project shows the modification time of its index file
+    handleWritten(fileName) {
+      if (path.basename(fileName) === 'index.mjml') {
+        this.props.updateProjectMtime(path.dirname(fileName), Date.now())
+      }
     }
 
     debounceWrite = debounce((fileName, mjml) => {
@@ -375,21 +442,26 @@ export default connect(
       this._view && this._view.requestMeasure()
     }
 
+    openSearch = () => {
+      if (this._view) {
+        this._view.focus()
+        openSearchPanel(this._view)
+      }
+    }
+
     focus = () => {
       this._view && this._view.focus()
     }
 
     render() {
-      const { disablePointer, onRef, fontSize } = this.props
+      const { disablePointer, onRef } = this.props
       const { isLoading } = this.state
-
-      const fontSizeClass = fontSize ? ` fontSize-${fontSize}` : ''
 
       onRef(this)
 
       return (
         <div
-          className={`FileEditor${fontSizeClass}`}
+          className="FileEditor"
           style={{
             pointerEvents: disablePointer ? 'none' : 'auto',
           }}

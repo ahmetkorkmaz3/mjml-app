@@ -17,10 +17,13 @@ const EVENT_CHANNELS = [
   'openPath',
   'browser-window-focus',
   'figma-import-progress',
+  'window-fullscreen',
 ]
 
 const api = {
   platform: process.platform,
+  // the theme of the first frame, the main process gives it as an argument
+  initialTheme: process.argv.includes('--mjml-theme=light') ? 'light' : 'dark',
   homedir: os.homedir(),
 
   path: {
@@ -30,6 +33,7 @@ const api = {
     basename: (p, ext) => path.basename(p, ext),
     dirname: p => path.dirname(p),
     extname: p => path.extname(p),
+    relative: (from, to) => path.relative(from, to),
   },
 
   fs: { ...fs },
@@ -55,6 +59,17 @@ const api = {
     isAvailable: () => ipcRenderer.invoke('secrets:isAvailable'),
     has: name => ipcRenderer.invoke('secrets:has', name),
     set: (name, value) => ipcRenderer.invoke('secrets:set', name, value),
+  },
+
+  theme: {
+    set: setting => ipcRenderer.invoke('theme:set', setting),
+  },
+
+  menu: {
+    setContext: context => ipcRenderer.invoke('menu:setContext', context),
+    popup: items => ipcRenderer.invoke('menu:popup', items),
+    // Windows and Linux: the application menu, the window has no menu bar
+    popupApp: () => ipcRenderer.invoke('menu:popupApp'),
   },
 
   storage: {

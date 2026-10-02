@@ -27,6 +27,13 @@ export default connect(({ search }) => ({ search }), {
 
     handleBlur = () => this.setState({ isFocused: false })
 
+    handleKeyDown = e => {
+      if (e.key === 'Escape') {
+        this.handleChange({ target: { value: '' } })
+        e.currentTarget.blur()
+      }
+    }
+
     handleChange = e => {
       const text = e.target.value
       this.setState({ textCache: text })
@@ -42,14 +49,17 @@ export default connect(({ search }) => ({ search }), {
             isFocused,
           })}
         >
-          <div className="GlobalSearch--icon-container d-f ai-c jc-c">
-            <IconSearch className="GlobalSearch--icon" size={16} />
+          <div className="GlobalSearch--icon-container">
+            <IconSearch size={14} />
           </div>
           <input
+            type="search"
             className="GlobalSearch--input"
-            placeholder="Filter by name"
+            placeholder="Search projects"
+            aria-label="Search projects"
             value={textCache}
             onChange={this.handleChange}
+            onKeyDown={this.handleKeyDown}
             onFocus={this.handleFocus}
             onBlur={this.handleBlur}
           />

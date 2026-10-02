@@ -145,7 +145,7 @@ export default connect(
                       placeholder="MJML path"
                       type="text"
                     />
-                    <Button ghost onClick={this.handleBrowse} type="button">
+                    <Button variant="secondary" onClick={this.handleBrowse} type="button">
                       {'Browse'}
                     </Button>
                   </div>

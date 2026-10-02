@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import cx from 'classnames'
 import { connect } from 'react-redux'
-import { Outlet, useLocation } from 'react-router'
+import { Outlet } from 'react-router'
 
 import api from 'helpers/api'
 import { dropFile } from 'actions/projects'
@@ -14,13 +14,14 @@ import AboutModal from 'components/AboutModal'
 import ExternalFileOverlay from 'components/ExternalFileOverlay'
 
 import Placeholder from './Placeholder'
+import useAppTheme from './useAppTheme'
 import DropFile from './DropFile'
 
 import './style.scss'
 
 function Application({ projects, settings, dropFile }) {
+  useAppTheme()
   const [isOver, setIsOver] = useState(false)
-  const { pathname } = useLocation()
 
   const handleDragLeave = () => setIsOver(false)
 
@@ -44,14 +45,7 @@ function Application({ projects, settings, dropFile }) {
   }
 
   return (
-    <div
-      className={cx('Application', {
-        'bg-dark': pathname === '/',
-        'bg-darker': pathname === '/project',
-        isOver,
-      })}
-      onDragOver={handleDragOver}
-    >
+    <div className={cx('Application', { isOver })} onDragOver={handleDragOver}>
       <DropFile
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}

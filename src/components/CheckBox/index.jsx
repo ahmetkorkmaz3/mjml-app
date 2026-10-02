@@ -1,12 +1,13 @@
 import { Component } from 'react'
 import cx from 'classnames'
-import { MdCheckBoxOutlineBlank as IconUnchecked, MdCheckBox as IconChecked } from 'react-icons/md'
+import { MdCheck as IconCheck } from 'react-icons/md'
 
 import './style.scss'
 
 class CheckBox extends Component {
   handleKeyDown = e => {
-    if (e.which === 13 || e.which === 32) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
       this.props.onChange(!this.props.value)
     }
   }
@@ -17,14 +18,16 @@ class CheckBox extends Component {
     return (
       <div
         tabIndex={0}
-        className={cx(className, 'Checkbox d-f ai-fs cu-d t-small focus')}
+        role="checkbox"
+        aria-checked={!!value}
+        className={cx(className, 'Checkbox d-f ai-fs t-small focus')}
         onKeyDown={this.handleKeyDown}
         onClick={() => onChange(!value)}
       >
-        <div className="mr-5 z">
-          {value ? <IconChecked size={15} /> : <IconUnchecked size={15} />}
-        </div>
-        <div>{children}</div>
+        <span className={cx('Checkbox--box', { isChecked: value })}>
+          {value && <IconCheck size={12} />}
+        </span>
+        {children && <div className="fg-1">{children}</div>}
       </div>
     )
   }

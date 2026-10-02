@@ -1,13 +1,12 @@
 import { Component } from 'react'
+import cx from 'classnames'
 
-import {
-  MdRadioButtonChecked as IconRadioChecked,
-  MdRadioButtonUnchecked as IconRadioUnchecked,
-} from 'react-icons/md'
+import 'components/CheckBox/style.scss'
 
 class Radio extends Component {
   handleKeyDown = e => {
-    if (e.which === 13 || e.which === 32) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
       this.props.onChange(this.props.value)
     }
   }
@@ -19,12 +18,12 @@ class Radio extends Component {
       <div
         className="d-f ai-fs t-small focus Radio"
         tabIndex={0}
+        role="radio"
+        aria-checked={!!isActive}
         onKeyDown={isActive ? undefined : this.handleKeyDown}
         onClick={isActive ? undefined : () => onChange(value)}
       >
-        <div className="mr-5 d-f ai-c fs-0" style={{ marginTop: 1 }}>
-          {isActive ? <IconRadioChecked /> : <IconRadioUnchecked />}
-        </div>
+        <span className={cx('Radio--box', { isChecked: isActive })} />
         <div className="fg-1">{children}</div>
       </div>
     )
