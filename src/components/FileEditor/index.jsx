@@ -23,6 +23,7 @@ import {
 } from '@codemirror/view'
 
 import { addAlert } from 'reducers/alerts'
+import { setEditorStatus, resetEditorStatus } from 'reducers/editorStatus'
 
 import isOldSyntax from 'helpers/detectOldMJMLSyntax'
 import { elements as mjmlElements } from 'helpers/codemirror/mjml-schema'
@@ -68,6 +69,8 @@ export default connect(
   {
     setPreview,
     addAlert,
+    setEditorStatus,
+    resetEditorStatus,
   },
 )(
   class FileEditor extends Component {
@@ -141,6 +144,8 @@ export default connect(
     }
 
     componentWillUnmount() {
+      cancelAnimationFrame(this._cursorFrame)
+      this.props.resetEditorStatus()
       this.handleChange.cancel()
       this.debounceWrite.flush()
       if (this._view) {
@@ -199,6 +204,9 @@ export default connect(
           EditorView.updateListener.of(update => {
             if (update.docChanged && !this._isSettingContent) {
               this.handleChange()
+            }
+            if (update.selectionSet || update.docChanged) {
+              this.scheduleCursorStatus()
             }
           }),
           c.theme.of(conf.theme),
@@ -261,6 +269,8 @@ export default connect(
         this._isSettingContent = false
         this._contentFileName = fileName
         this._lastWritten[fileName] = content
+        this.updateDirty()
+        this.scheduleCursorStatus()
 
         // fold lines on mjml files, based on settings
         const { autoFold, foldLevel } = this.props
@@ -300,6 +310,7 @@ export default connect(
       try {
         await writeFile(fileName, mjml)
         this._lastWritten[fileName] = mjml
+        this.updateDirty()
         addAlert('File successfully saved', 'success')
       } catch (e) {
         addAlert('Could not save file', 'error')
@@ -326,8 +337,50 @@ export default connect(
         setPreview(fileName, mjml)
       }
 
+      this.updateDirty()
       window.requestIdleCallback(this.detectOldSyntax)
     }, 200)
+
+    // one dispatch for each frame at most
+    scheduleCursorStatus = () => {
+      if (this._cursorFrame) {
+        return
+      }
+      this._cursorFrame = requestAnimationFrame(() => {
+        this._cursorFrame = null
+        if (!this._view) {
+          return
+        }
+        const { state } = this._view
+        const head = state.selection.main.head
+        const line = state.doc.lineAt(head)
+        this.props.setEditorStatus({ line: line.number, col: head - line.from + 1 })
+      })
+    }
+
+    // the file has changes that are not on the disk (only without auto-save)
+    updateDirty = () => {
+      const fileName = this._contentFileName
+      if (!this._view || !fileName) {
+        return
+      }
+      const isDirty =
+        !!this.props.preventAutoSave && this.getContent() !== this._lastWritten[fileName]
+      if (isDirty !== this._isDirty) {
+        this._isDirty = isDirty
+        this.props.setEditorStatus({ isDirty })
+      }
+    }
+
+    goToLine = lineNumber => {
+      if (!this._view) {
+        return
+      }
+      const { doc } = this._view.state
+      const line = doc.line(Math.min(Math.max(1, lineNumber), doc.lines))
+      this._view.dispatch({ selection: { anchor: line.from }, scrollIntoView: true })
+      this._view.focus()
+    }
 
     getContent = () => {
       return this._view.state.doc.toString()
@@ -365,6 +418,7 @@ export default connect(
       }
       await writeFile(fileName, mjml)
       this._lastWritten[fileName] = mjml
+      this.updateDirty()
     }
 
     debounceWrite = debounce((fileName, mjml) => {

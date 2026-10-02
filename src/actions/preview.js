@@ -4,6 +4,7 @@ import { path } from 'helpers/api'
 import mjml2html from 'helpers/mjml'
 import { readFile } from 'helpers/fs'
 import { updateProjectPreview } from 'actions/projects'
+import { setEditorStatus } from 'reducers/editorStatus'
 
 const setPrev = createAction('SET_PREVIEW')
 
@@ -44,7 +45,16 @@ export function setPreview(fileName, content = '') {
           minify: settings.getIn(['mjml', 'minify']),
         }
 
-        const { html, errors } = await mjml2html(content, fileName, mjmlPath, renderOpts)
+        dispatch(setEditorStatus({ isRendering: true }))
+        const startedAt = performance.now()
+        let result
+        try {
+          result = await mjml2html(content, fileName, mjmlPath, renderOpts)
+        } finally {
+          const renderMs = Math.round(performance.now() - startedAt)
+          dispatch(setEditorStatus({ isRendering: false, renderMs }))
+        }
+        const { html, errors } = result
         dispatch(setPrev({ type: 'html', content: html, errors }))
         // update the preview in project
         if (bName === 'index.mjml') {

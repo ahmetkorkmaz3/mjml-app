@@ -12,6 +12,7 @@ import externalFileOverlay from './externalFileOverlay'
 import search from './search'
 import snippets from './snippets'
 import theme from './theme'
+import editorStatus from './editorStatus'
 
 const rootReducer = combineReducers({
   settings,
@@ -26,6 +27,7 @@ const rootReducer = combineReducers({
   search,
   snippets,
   theme,
+  editorStatus,
 })
 
 export default rootReducer
