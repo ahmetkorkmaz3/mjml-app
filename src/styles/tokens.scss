@@ -1,0 +1,126 @@
+// The design tokens of the app. The renderer sets data-theme ('light' or
+// 'dark') and data-platform (process.platform) on <html>.
+// Components use these properties only, no fixed colors.
+
+:root {
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 13px;
+  --text-lg: 15px;
+  --text-xl: 20px;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+
+  --titlebar-height: 44px;
+  --statusbar-height: 24px;
+  --control-height: 28px;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg-window: #1e1f24;
+  --bg-sidebar: #191a1f;
+  --bg-panel: #23242a;
+  --bg-elevated: #2b2c33;
+  --bg-input: #17181c;
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-active: rgba(255, 255, 255, 0.1);
+  --bg-selected: rgba(76, 141, 255, 0.18);
+  --bg-canvas: #15161a;
+
+  --fg: #e6e6ea;
+  --fg-muted: #a1a1aa;
+  --fg-subtle: #6b6b75;
+  --fg-on-accent: #ffffff;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --separator: rgba(0, 0, 0, 0.4);
+
+  --accent: #4c8dff;
+  --accent-hover: #6aa0ff;
+  --focus-ring: rgba(76, 141, 255, 0.55);
+
+  --danger: #ff6b6b;
+  --danger-bg: rgba(255, 107, 107, 0.14);
+  --warning: #f0b44c;
+  --warning-bg: rgba(240, 180, 76, 0.14);
+  --success: #3ecf8e;
+  --success-bg: rgba(62, 207, 142, 0.14);
+
+  --shadow-popover: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-dialog: 0 20px 60px rgba(0, 0, 0, 0.55);
+  --overlay: rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg-window: #f5f5f7;
+  --bg-sidebar: #ececef;
+  --bg-panel: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: rgba(0, 0, 0, 0.05);
+  --bg-active: rgba(0, 0, 0, 0.08);
+  --bg-selected: rgba(52, 112, 223, 0.14);
+  --bg-canvas: #e9e9ed;
+
+  --fg: #1d1d1f;
+  --fg-muted: #5f5f66;
+  --fg-subtle: #8e8e95;
+  --fg-on-accent: #ffffff;
+
+  --border: rgba(0, 0, 0, 0.1);
+  --border-strong: rgba(0, 0, 0, 0.18);
+  --separator: rgba(0, 0, 0, 0.08);
+
+  --accent: #3470df;
+  --accent-hover: #2b62c9;
+  --focus-ring: rgba(52, 112, 223, 0.5);
+
+  --danger: #d93a3a;
+  --danger-bg: rgba(217, 58, 58, 0.1);
+  --warning: #b7791f;
+  --warning-bg: rgba(183, 121, 31, 0.1);
+  --success: #1f9d63;
+  --success-bg: rgba(31, 157, 99, 0.1);
+
+  --shadow-popover: 0 8px 30px rgba(0, 0, 0, 0.14);
+  --shadow-dialog: 0 20px 60px rgba(0, 0, 0, 0.2);
+  --overlay: rgba(0, 0, 0, 0.25);
+}
+
+// macOS: the sidebars show the window vibrancy
+:root[data-platform='darwin'][data-theme='dark'] {
+  --bg-sidebar: rgba(25, 26, 31, 0.72);
+}
+
+:root[data-platform='darwin'][data-theme='light'] {
+  --bg-sidebar: rgba(236, 236, 239, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+  }
+}
