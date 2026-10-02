@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, nativeTheme } from 'electron'
+import { app, BrowserWindow, Menu, nativeTheme, screen } from 'electron'
 import { join } from 'node:path'
 import { autoUpdater } from 'electron-updater'
 import fixPath from 'fix-path'
@@ -7,6 +7,7 @@ import { saveWindowSettings, getWindowSettings, getStoredSettings } from './wind
 import { registerIpcHandlers } from './ipc'
 import buildMenu from './menu'
 import { normalizeThemeSetting, windowColors } from './theme'
+import { fitBounds } from './window-bounds'
 
 const isDevelopment = !app.isPackaged
 
@@ -38,7 +39,16 @@ function updateWindowTheme() {
     return
   }
   const colors = windowColors(nativeTheme.shouldUseDarkColors)
+  if (process.platform === 'darwin') {
+    // the window stays transparent for the vibrancy
+    return
+  }
   mainWindow.setBackgroundColor(colors.background)
+  try {
+    mainWindow.setTitleBarOverlay({ color: colors.background, symbolColor: colors.symbol })
+  } catch (err) {
+    console.log(err)
+  }
 }
 
 async function installExtensions() {
@@ -54,11 +64,27 @@ async function installExtensions() {
 }
 
 async function createMainWindow() {
-  const windowParams = await getWindowSettings()
+  const saved = await getWindowSettings()
+  const bounds = fitBounds(saved, screen.getAllDisplays(), { width: 1280, height: 800 })
+  const isMac = process.platform === 'darwin'
   const isDark = nativeTheme.shouldUseDarkColors
   const colors = windowColors(isDark)
 
   const w = new BrowserWindow({
+    ...bounds,
+    minWidth: 960,
+    minHeight: 600,
+    ...(isMac
+      ? {
+          titleBarStyle: 'hiddenInset',
+          trafficLightPosition: { x: 16, y: 14 },
+          vibrancy: 'sidebar',
+          visualEffectState: 'followWindow',
+        }
+      : {
+          titleBarStyle: 'hidden',
+          titleBarOverlay: { height: 44, color: colors.background, symbolColor: colors.symbol },
+        }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -69,10 +95,17 @@ async function createMainWindow() {
       webSecurity: false,
       additionalArguments: [`--mjml-theme=${isDark ? 'dark' : 'light'}`],
     },
-    backgroundColor: colors.background,
+    backgroundColor: isMac ? '#00000000' : colors.background,
     show: false,
-    ...windowParams,
   })
+
+  if (saved && saved.isMaximized) {
+    w.maximize()
+  }
+
+  const sendFullScreen = isFullScreen => w.webContents.send('window-fullscreen', isFullScreen)
+  w.on('enter-full-screen', () => sendFullScreen(true))
+  w.on('leave-full-screen', () => sendFullScreen(false))
 
   w.once('ready-to-show', () => {
     isRendererReady = true
