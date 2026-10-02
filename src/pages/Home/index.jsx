@@ -14,8 +14,18 @@ import MassActions from 'components/MassActions'
 import ProjectsList from 'components/ProjectsList'
 import GlobalSearch from 'components/GlobalSearch'
 import TitleBar from 'components/TitleBar'
+import PageCommands from 'components/PageCommands'
 
 import './style.scss'
+
+const HOME_CONTEXT = { page: 'home', hasMjmlFile: false, hasPreview: false, preventAutoSave: false }
+
+const HOME_COMMANDS = {
+  find: () => {
+    const input = document.querySelector('.GlobalSearch--input')
+    if (input) input.focus()
+  },
+}
 
 export default connect(
   state => ({
@@ -40,6 +50,7 @@ export default connect(
 
       return (
         <div className="fg-1 d-f fd-c">
+          <PageCommands commands={HOME_COMMANDS} context={HOME_CONTEXT} />
           <TitleBar
             left={hasProjects && <GlobalSearch className="fg-1" />}
             right={

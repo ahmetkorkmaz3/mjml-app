@@ -10,7 +10,7 @@ import { copyLineDown, defaultKeymap, history, historyKeymap } from '@codemirror
 import { foldGutter, foldKeymap, indentOnInput, indentUnit } from '@codemirror/language'
 import { xml } from '@codemirror/lang-xml'
 import { lintGutter, setDiagnostics } from '@codemirror/lint'
-import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
+import { highlightSelectionMatches, openSearchPanel, searchKeymap } from '@codemirror/search'
 import { Compartment, EditorState } from '@codemirror/state'
 import {
   EditorView,
@@ -373,6 +373,13 @@ export default connect(
 
     refresh = () => {
       this._view && this._view.requestMeasure()
+    }
+
+    openSearch = () => {
+      if (this._view) {
+        this._view.focus()
+        openSearchPanel(this._view)
+      }
     }
 
     focus = () => {

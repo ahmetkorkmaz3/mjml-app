@@ -64,6 +64,10 @@ const api = {
     set: setting => ipcRenderer.invoke('theme:set', setting),
   },
 
+  menu: {
+    setContext: context => ipcRenderer.invoke('menu:setContext', context),
+  },
+
   storage: {
     get: key => ipcRenderer.invoke('storage:get', key),
     set: (key, value) => ipcRenderer.invoke('storage:set', key, value),
