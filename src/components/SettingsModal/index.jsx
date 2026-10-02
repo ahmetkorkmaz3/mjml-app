@@ -1,4 +1,4 @@
-import { Component } from 'react'
+import { Component, useEffect, useState } from 'react'
 import debounce from 'lodash/debounce'
 import { connect } from 'react-redux'
 import {
@@ -30,6 +30,46 @@ import SettingRow from './SettingRow'
 
 import './style.scss'
 
+// saves only whole numbers from min, so an empty input does not save 0
+// on blur, a value that is not valid goes back to the saved value (or to min when it is too small)
+function NumberInput({ value, onChange, min }) {
+  const [text, setText] = useState(String(value))
+
+  useEffect(() => setText(String(value)), [value])
+
+  const parse = t => {
+    const n = Math.round(Number(t))
+    return t.trim() !== '' && Number.isFinite(n) ? n : null
+  }
+
+  const handleChange = e => {
+    setText(e.target.value)
+    const n = parse(e.target.value)
+    if (n !== null && n >= min && n !== value) onChange(n)
+  }
+
+  const handleBlur = () => {
+    const n = parse(text)
+    if (n === null) {
+      setText(String(value))
+    } else if (n < min) {
+      setText(String(min))
+      if (value !== min) onChange(min)
+    }
+  }
+
+  return (
+    <input
+      type="number"
+      min={min}
+      step={1}
+      value={text}
+      onChange={handleChange}
+      onBlur={handleBlur}
+    />
+  )
+}
+
 export default connect(
   state => ({
     isOpened: isModalOpened(state, 'settings'),
@@ -57,7 +97,7 @@ export default connect(
         ...state,
         sizes: {
           ...state.sizes,
-          [key]: Number(val),
+          [key]: val,
         },
       }))
       this.debounceChangeSizes()
@@ -90,14 +130,7 @@ export default connect(
     }
 
     numberInput(value, onChange, min = 1) {
-      return (
-        <input
-          type="number"
-          min={min}
-          value={value}
-          onChange={e => onChange(Number(e.target.value))}
-        />
-      )
+      return <NumberInput value={value} onChange={onChange} min={min} />
     }
 
     render() {

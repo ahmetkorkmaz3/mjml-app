@@ -6,9 +6,20 @@ import { MdError as IconError } from 'react-icons/md'
 
 import { addSnippet, updateSnippet } from 'actions/snippets'
 
+import { getSnippetErrors } from './validate'
+
+function FieldError({ children }) {
+  return (
+    <div className="t-small mt-10 c-red">
+      <IconError className="mr-5 mb-5" />
+      {children}
+    </div>
+  )
+}
+
 export default connect(
   state => ({
-    settings: state.settings,
+    snippets: state.settings.get('snippets'),
   }),
   {
     addSnippet,
@@ -19,122 +30,52 @@ export default connect(
     static defaultProps = {
       name: '',
       trigger: '',
+      content: '',
     }
 
+    // the fields start with the values of the edited snippet
     state = {
-      snippetName: '',
-      snippetTrigger: '',
-      snippetNameIsAvailable: true,
-      snippetTriggerIsAvailable: true,
-      snippetWasEdited: false,
+      snippetName: this.props.name,
+      snippetTrigger: this.props.trigger,
+      snippetContent: this.props.content,
     }
 
-    handleChangeName = (e, originalName) => {
-      const { value } = e.target
-      const { settings } = this.props
-      const snippets = settings.get('snippets')
-
-      this.setState({
-        snippetWasEdited: true,
-        snippetName: value,
-      })
-
-      if (snippets.find(s => s.name === value.trim())) {
-        if (snippets.find(s => s.name === value.trim()).name !== originalName) {
-          this.setState({
-            snippetNameIsAvailable: false,
-          })
-        } else {
-          this.setState({
-            snippetNameIsAvailable: true,
-          })
-        }
-      } else {
-        this.setState({
-          snippetNameIsAvailable: true,
-        })
-      }
+    getErrors() {
+      const { snippets, snippetIsEdited, name } = this.props
+      const { snippetName, snippetTrigger, snippetContent } = this.state
+      return getSnippetErrors(
+        { name: snippetName, trigger: snippetTrigger, content: snippetContent },
+        snippets ? snippets.toArray() : [],
+        snippetIsEdited ? name : null,
+      )
     }
 
-    handleChangeTrigger = (e, originalName) => {
-      const { value } = e.target
-      const { settings } = this.props
+    handleChangeName = e => this.setState({ snippetName: e.target.value })
 
-      const snippets = settings.get('snippets')
+    handleChangeTrigger = e => this.setState({ snippetTrigger: e.target.value })
 
-      this.setState({
-        snippetWasEdited: true,
-        snippetTrigger: value,
-      })
-
-      if (/\s/g.test(value)) {
-        this.setState({
-          snippetTriggerIsAvailable: true,
-          snippetTriggerIsInvalid: true,
-        })
-      } else if (snippets.find(s => s.trigger === value.trim())) {
-        if (snippets.find(s => s.trigger === value.trim()).name !== originalName) {
-          this.setState({
-            snippetTriggerIsAvailable: false,
-            snippetTriggerIsInvalid: false,
-          })
-        } else {
-          this.setState({
-            snippetTriggerIsAvailable: true,
-            snippetTriggerIsInvalid: false,
-          })
-        }
-      } else {
-        this.setState({
-          snippetTriggerIsAvailable: true,
-          snippetTriggerIsInvalid: false,
-        })
-      }
-    }
-
-    handleChangeContent = e => {
-      const { value } = e.target
-      this.setState({
-        snippetWasEdited: true,
-        snippetContent: value,
-      })
-    }
+    handleChangeContent = e => this.setState({ snippetContent: e.target.value })
 
     handleSubmit = e => {
-      e.preventDefault()
-    }
-
-    createSnippet = (snippetName, snippetTrigger, snippetContent) => {
-      this.setState({
-        snippetName: '',
-        snippetTrigger: '',
-        snippetContent: '',
-      })
+      e && e.preventDefault()
+      if (Object.keys(this.getErrors()).length) {
+        return
+      }
+      const { snippetIsEdited, name } = this.props
+      const { snippetName, snippetTrigger, snippetContent } = this.state
+      if (snippetIsEdited) {
+        this.props.updateSnippet(name, snippetName.trim(), snippetTrigger.trim(), snippetContent)
+        return
+      }
       this.props.addSnippet(snippetName.trim(), snippetTrigger.trim(), snippetContent)
-    }
-
-    updateSnippet = (oldName, newName, oldTrigger, newTrigger, oldContent, newContent) => {
-      this.setState({
-        snippetName: newName || oldName,
-        snippetTrigger: newTrigger || oldTrigger,
-        snippetContent: newContent || oldContent,
-      })
-
-      this.props.updateSnippet(oldName, newName.trim(), newTrigger.trim(), newContent)
+      this.setState({ snippetName: '', snippetTrigger: '', snippetContent: '' })
     }
 
     render() {
-      const {
-        snippetName,
-        snippetContent,
-        snippetTrigger,
-        snippetNameIsAvailable,
-        snippetTriggerIsAvailable,
-        snippetTriggerIsInvalid,
-        snippetWasEdited,
-      } = this.state
-
-      const { name, trigger, content, snippetIsEdited } = this.props
+      const { snippetName, snippetContent, snippetTrigger } = this.state
+      const { snippetIsEdited } = this.props
+      const errors = this.getErrors()
+      const hasErrors = Object.keys(errors).length > 0
 
       return (
         <div className="mb-20">
@@ -146,20 +87,15 @@ export default connect(
                 </div>
                 <input
                   className="fg-1"
-                  onChange={e => this.handleChangeName(e, name)}
+                  onChange={this.handleChangeName}
                   placeholder="Name"
-                  value={snippetWasEdited ? snippetName : name}
+                  value={snippetName}
                   type="text"
                   autoFocus
                 />
               </div>
-              {!snippetNameIsAvailable && (
-                <div className="t-small mt-10 c-red">
-                  <IconError className="mr-5 mb-5" />
-                  <b className="mr-5">{snippetName.trim()}</b>
-                  {'is already taken'}
-                </div>
-              )}
+              {/* the "required" errors only disable the button */}
+              {snippetName.trim() && errors.name && <FieldError>{errors.name}</FieldError>}
 
               <div className="d-f ai-b">
                 <div style={{ width: 120 }} className="fs-0">
@@ -167,25 +103,13 @@ export default connect(
                 </div>
                 <input
                   className="fg-1"
-                  onChange={e => this.handleChangeTrigger(e, name)}
+                  onChange={this.handleChangeTrigger}
                   placeholder="Trigger"
-                  value={snippetWasEdited ? snippetTrigger : trigger}
+                  value={snippetTrigger}
                   type="text"
                 />
               </div>
-              {snippetTriggerIsInvalid && (
-                <div className="t-small mt-10 c-red">
-                  <IconError className="mr-5 mb-5" />
-                  {'Spaces are not allowed in triggers'}
-                </div>
-              )}
-              {!snippetTriggerIsAvailable && (
-                <div className="t-small mt-10 c-red">
-                  <IconError className="mr-5 mb-5" />
-                  <b className="mr-5">{snippetTrigger.trim()}</b>
-                  {'is already taken'}
-                </div>
-              )}
+              {snippetTrigger.trim() && errors.trigger && <FieldError>{errors.trigger}</FieldError>}
               <div className="d-b">
                 <div style={{ width: 120 }} className="fs-0">
                   {'Snippet Content:'}
@@ -194,46 +118,15 @@ export default connect(
                   <textarea
                     onChange={this.handleChangeContent}
                     placeholder="Content"
-                    value={snippetWasEdited ? snippetContent : content}
-                    type="text"
+                    value={snippetContent}
                   />
                 </div>
               </div>
             </div>
           </form>
-          {!snippetIsEdited && (
-            <Button
-              disabled={
-                !snippetName ||
-                !snippetTrigger ||
-                !snippetContent ||
-                !snippetNameIsAvailable ||
-                !snippetTriggerIsAvailable ||
-                !snippetTriggerIsAvailable
-              }
-              primary
-              onClick={() => this.createSnippet(snippetName, snippetTrigger, snippetContent)}
-            >
-              {'Create Snippet'}
-            </Button>
-          )}
-          {snippetIsEdited && (
-            <Button
-              primary
-              onClick={() =>
-                this.updateSnippet(
-                  name,
-                  snippetName || name,
-                  trigger,
-                  snippetTrigger || trigger,
-                  content,
-                  snippetContent || content,
-                )
-              }
-            >
-              {'Update Snippet'}
-            </Button>
-          )}
+          <Button disabled={hasErrors} primary onClick={this.handleSubmit}>
+            {snippetIsEdited ? 'Update Snippet' : 'Create Snippet'}
+          </Button>
         </div>
       )
     }

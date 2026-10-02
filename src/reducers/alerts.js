@@ -12,7 +12,8 @@ export default handleActions(
 
 let __ID__ = 0
 
-export function addAlert(message, type = 'info', { autoHide = true } = {}) {
+// an error stays until the user closes it, the other alerts hide after 4 seconds
+export function addAlert(message, type = 'info', { autoHide = type !== 'error' } = {}) {
   return dispatch => {
     const alert = { id: __ID__++, message, type }
     dispatch({ type: 'ALERT_ADD', payload: alert })

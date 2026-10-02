@@ -3,8 +3,9 @@ import { connect } from 'react-redux'
 
 import Button from 'components/Button'
 
-import { addSnippet, updateSnippet } from 'actions/snippets'
+import { saveSettings } from 'actions/settings'
 import { addAlert } from 'reducers/alerts'
+import { parseSnippetsImport } from 'components/SnippetForm/validate'
 
 import api from 'helpers/api'
 import { saveDialog, fileDialog, writeFile, readFile } from 'helpers/fs'
@@ -16,15 +17,23 @@ export default connect(
     settings: state.settings,
   }),
   {
-    addSnippet,
-    updateSnippet,
+    addSnippetsFromImport: snippets => dispatch => {
+      // one action for each snippet, then one save and one alert for the import
+      for (const { name, trigger, content } of snippets) {
+        dispatch({
+          type: 'SNIPPET_ADD',
+          payload: { snippetName: name, snippetTrigger: trigger, snippetContent: content },
+        })
+      }
+      if (snippets.length) dispatch(saveSettings())
+    },
     addAlert,
   },
 )(
   class SnippetImports extends Component {
     async importSnippets() {
-      const { settings, addSnippet } = this.props
-      const existingSnippets = settings.get('snippets')
+      const { settings, addSnippetsFromImport, addAlert } = this.props
+      const existingSnippets = settings.get('snippets').toArray()
 
       const filePath = await fileDialog({
         title: 'Import Snippets from JSON file',
@@ -35,18 +44,21 @@ export default connect(
 
       if (!filePath) return
 
-      const newSnippetsJson = await readFile(filePath)
-      const newSnippets = JSON.parse(newSnippetsJson)
-
-      for (const snippet of newSnippets) {
-        const exists =
-          !!existingSnippets.find(s => s.name === snippet.name) ||
-          !!existingSnippets.find(s => s.trigger === snippet.trigger)
-
-        if (!exists) {
-          addSnippet(snippet.name, snippet.trigger, snippet.content)
-        }
+      let result
+      try {
+        result = parseSnippetsImport(await readFile(filePath), existingSnippets)
+      } catch (err) {
+        addAlert(`Could not import the snippets: ${err.message}`, 'error')
+        return
       }
+
+      const { added, skipped } = result
+      addSnippetsFromImport(added)
+      const message = [
+        `Imported ${added.length} snippet${added.length === 1 ? '' : 's'}`,
+        skipped ? `, skipped ${skipped} (invalid, or the name or trigger is already used)` : '',
+      ].join('')
+      addAlert(message, added.length ? 'success' : 'info')
     }
 
     async exportSnippets() {
@@ -61,7 +73,12 @@ export default connect(
 
       if (!filePath) return
 
-      await writeFile(filePath, JSON.stringify(snippets))
+      try {
+        await writeFile(filePath, JSON.stringify(snippets))
+      } catch (err) {
+        addAlert(`Could not export the snippets: ${err.message}`, 'error')
+        return
+      }
 
       addAlert('JSON successfully created!', 'success')
     }

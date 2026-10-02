@@ -21,6 +21,7 @@ import Modal from 'components/Modal'
 import Button from 'components/Button'
 
 import { isModalOpened, closeModal } from 'reducers/modals'
+import { addAlert } from 'reducers/alerts'
 
 import createFromTemplate from 'actions/createFromTemplate'
 import createFromGallery from 'actions/createFromGallery'
@@ -55,6 +56,7 @@ export default connect(
         createFromTemplate,
         createFromGallery,
         saveLastOpenedFolder,
+        addAlert,
       },
       dispatch,
     ),
@@ -104,30 +106,43 @@ export default connect(
     handleNext = async () => {
       const { projectName, projectLocation, step } = this.state
 
-      const { createFromTemplate, createFromGallery, closeModal, saveLastOpenedFolder } = this.props
+      const { createFromTemplate, createFromGallery, closeModal, saveLastOpenedFolder, addAlert } =
+        this.props
 
       if (step === 'name') {
         this.setState({ step: 'template' })
       }
 
       if (step === 'template') {
+        // a second click while the project is created does nothing
+        if (this.state.isCreating) {
+          return
+        }
+        this.setState({ isCreating: true })
+
         const fullPath =
           projectName && projectLocation ? path.join(projectLocation, projectName) : null
 
-        // handle from gallery
-        if (isObject(this.state.template)) {
-          const MJMLContentRes = await fetch(this.state.template.mjml)
-          const MJMLContent = await MJMLContentRes.text()
-          this.setState({ isCreating: true })
-          await createFromGallery(fullPath, MJMLContent)
-          this.setState({ isCreating: false })
-        } else {
-          // handle from our own templates
-          await createFromTemplate(fullPath, templates[this.state.template])
+        try {
+          // handle from gallery
+          if (isObject(this.state.template)) {
+            const MJMLContentRes = await fetch(this.state.template.mjml)
+            if (!MJMLContentRes.ok) {
+              throw new Error(`GitHub answered ${MJMLContentRes.status}`)
+            }
+            const MJMLContent = await MJMLContentRes.text()
+            await createFromGallery(fullPath, MJMLContent)
+          } else {
+            // handle from our own templates
+            await createFromTemplate(fullPath, templates[this.state.template])
+          }
           saveLastOpenedFolder(projectLocation)
+          closeModal()
+        } catch (err) {
+          addAlert(`Could not download the template: ${err.message}`, 'error')
+        } finally {
+          this.setState({ isCreating: false })
         }
-
-        closeModal()
       }
     }
 
