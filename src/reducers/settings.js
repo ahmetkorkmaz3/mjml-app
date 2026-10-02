@@ -16,6 +16,8 @@ export default handleActions(
         previewSize: Map(payload.previewSize),
         ai: Map(payload.ai),
         figma: Map(payload.figma),
+        appearance: Map(payload.appearance),
+        layout: Map(payload.layout),
         snippets: List(payload.snippets),
         templating: payload.templating,
       })

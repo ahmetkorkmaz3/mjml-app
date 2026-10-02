@@ -17,6 +17,15 @@ export const saveWindowSettings = async window => {
   return storageSet('settings', settings)
 }
 
+// the stored settings, or an empty object when they cannot be read
+export const getStoredSettings = async () => {
+  try {
+    return (await storageGet('settings')) || {}
+  } catch (e) {
+    return {}
+  }
+}
+
 export const getWindowSettings = async () => {
   try {
     const settings = await storageGet('settings')

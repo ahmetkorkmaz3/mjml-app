@@ -1,11 +1,12 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, nativeTheme } from 'electron'
 import { join } from 'node:path'
 import { autoUpdater } from 'electron-updater'
 import fixPath from 'fix-path'
 
-import { saveWindowSettings, getWindowSettings } from './window-settings'
+import { saveWindowSettings, getWindowSettings, getStoredSettings } from './window-settings'
 import { registerIpcHandlers } from './ipc'
 import buildMenu from './menu'
+import { normalizeThemeSetting, windowColors } from './theme'
 
 const isDevelopment = !app.isPackaged
 
@@ -26,6 +27,20 @@ function sendOpenPath() {
   }
 }
 
+// the first frame must use the stored theme, so read it before the window exists
+async function applyStoredTheme() {
+  const settings = await getStoredSettings()
+  nativeTheme.themeSource = normalizeThemeSetting(settings.appearance?.theme)
+}
+
+function updateWindowTheme() {
+  if (!mainWindow) {
+    return
+  }
+  const colors = windowColors(nativeTheme.shouldUseDarkColors)
+  mainWindow.setBackgroundColor(colors.background)
+}
+
 async function installExtensions() {
   try {
     const { installExtension, REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } =
@@ -40,6 +55,8 @@ async function installExtensions() {
 
 async function createMainWindow() {
   const windowParams = await getWindowSettings()
+  const isDark = nativeTheme.shouldUseDarkColors
+  const colors = windowColors(isDark)
 
   const w = new BrowserWindow({
     webPreferences: {
@@ -50,8 +67,9 @@ async function createMainWindow() {
       sandbox: false,
       // the preview loads local images (file://) from the project folder
       webSecurity: false,
+      additionalArguments: [`--mjml-theme=${isDark ? 'dark' : 'light'}`],
     },
-    backgroundColor: '#2A2A35',
+    backgroundColor: colors.background,
     show: false,
     ...windowParams,
   })
@@ -132,7 +150,9 @@ app.on('open-file', (event, filePath) => {
 })
 
 app.whenReady().then(async () => {
-  registerIpcHandlers()
+  registerIpcHandlers({ onThemeChange: updateWindowTheme })
+  nativeTheme.on('updated', updateWindowTheme)
+  await applyStoredTheme()
   if (isDevelopment) {
     await installExtensions()
   }

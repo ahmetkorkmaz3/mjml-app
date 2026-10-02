@@ -12,6 +12,10 @@ import { openModal } from 'reducers/modals'
 import 'styles/global.scss'
 import 'styles/utils.scss'
 
+// the first frame uses the theme that the main process resolved
+document.documentElement.dataset.theme = api.initialTheme
+document.documentElement.dataset.platform = api.platform
+
 const store = createStore()
 const { dispatch } = store
 

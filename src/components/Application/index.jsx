@@ -14,11 +14,13 @@ import AboutModal from 'components/AboutModal'
 import ExternalFileOverlay from 'components/ExternalFileOverlay'
 
 import Placeholder from './Placeholder'
+import useAppTheme from './useAppTheme'
 import DropFile from './DropFile'
 
 import './style.scss'
 
 function Application({ projects, settings, dropFile }) {
+  useAppTheme()
   const [isOver, setIsOver] = useState(false)
   const { pathname } = useLocation()
 

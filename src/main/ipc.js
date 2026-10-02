@@ -1,6 +1,15 @@
 import { promisify } from 'node:util'
 import { join } from 'node:path'
-import { app, BrowserWindow, clipboard, dialog, ipcMain, safeStorage, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  ipcMain,
+  nativeTheme,
+  safeStorage,
+  shell,
+} from 'electron'
 import storage from 'electron-json-storage'
 
 import { toErrorResult } from './errors'
@@ -8,6 +17,7 @@ import { createFigmaImporter } from './figma-import'
 import { cleanUpScreenshot, renderScreenshot, takeScreenshot } from './screenshot'
 import { createSecretStore, SECRET_NAMES } from './secrets'
 import { compile } from './templating'
+import { normalizeThemeSetting } from './theme'
 
 const storageGet = promisify(storage.get)
 const storageSet = promisify(storage.set)
@@ -26,7 +36,7 @@ function openExternal(url) {
   }
 }
 
-export function registerIpcHandlers() {
+export function registerIpcHandlers({ onThemeChange }) {
   ipcMain.handle('storage:get', (e, key) => storageGet(key))
   ipcMain.handle('storage:set', (e, key, value) => storageSet(key, value))
 
@@ -49,6 +59,11 @@ export function registerIpcHandlers() {
   ipcMain.handle('shell:showItemInFolder', (e, p) => shell.showItemInFolder(p))
   ipcMain.handle('shell:openPath', (e, p) => shell.openPath(p))
   ipcMain.handle('shell:trashItem', (e, p) => shell.trashItem(p))
+
+  ipcMain.handle('theme:set', (e, setting) => {
+    nativeTheme.themeSource = normalizeThemeSetting(setting)
+    onThemeChange(nativeTheme.themeSource)
+  })
 
   ipcMain.handle('templating:compile', (e, params) => compile(params))
 
