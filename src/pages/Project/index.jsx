@@ -87,6 +87,7 @@ const ConnectedProjectPage = connect(
     checkForRelativePaths: state.settings.getIn(['mjml', 'checkForRelativePaths']),
     preventAutoSave: state.settings.getIn(['editor', 'preventAutoSave']),
     isDirty: state.editorStatus.isDirty,
+    layout: state.settings.get('layout'),
   }),
   {
     openModal,
@@ -133,8 +134,10 @@ const ConnectedProjectPage = connect(
       beautify: () => this.isMJMLFile() && this._editor && this.handleBeautify(),
       refine: () => this.isMJMLFile() && this.openRefineModal(),
       templating: () => this.handleOpenSettings(),
-      'toggle-sidebar': () => {},
-      'toggle-preview': () => {},
+      'toggle-sidebar': () =>
+        this.props.updateSettings(s => s.updateIn(['layout', 'sidebarCollapsed'], v => !v)),
+      'toggle-preview': () =>
+        this.props.updateSettings(s => s.updateIn(['layout', 'previewCollapsed'], v => !v)),
       'preview-desktop': () => this.setPreviewSize('desktop'),
       'preview-mobile': () => this.setPreviewSize('mobile'),
     }
@@ -324,7 +327,7 @@ const ConnectedProjectPage = connect(
     }
 
     render() {
-      const { preventAutoSave, previewSize, isDirty, rootPath } = this.props
+      const { preventAutoSave, previewSize, isDirty, rootPath, layout } = this.props
       const { path, activeFile, showSettings } = this.state
 
       const projectName = pathModule.basename(rootPath)
@@ -451,6 +454,11 @@ const ConnectedProjectPage = connect(
               onPathChange={this.handlePathChange}
               onAddFile={this.handleAddFile}
               onRemoveFile={this.handleRemoveFile}
+              onNewFile={this.openAddFileModal}
+              onImportFigma={this.openFigmaImportModal}
+              sidebarCollapsed={!!layout.get('sidebarCollapsed')}
+              previewCollapsed={!!layout.get('previewCollapsed')}
+              sidebarWidth={layout.get('sidebarWidth')}
               focusHome
             />
           </div>
