@@ -66,8 +66,21 @@ export function registerIpcHandlers() {
   const importer = createFigmaImporter({ secrets, renderScreenshot })
   const unknownSecret = { error: { code: 'UNKNOWN_SECRET', message: 'Unknown secret.' } }
 
-  ipcMain.handle('secrets:isAvailable', () => secrets.isAvailable())
-  ipcMain.handle('secrets:has', (e, name) => SECRET_NAMES.includes(name) && secrets.has(name))
+  // the renderer uses these two as booleans, so an unreadable keys file gives false
+  ipcMain.handle('secrets:isAvailable', async () => {
+    try {
+      return await secrets.isAvailable()
+    } catch (err) {
+      return false
+    }
+  })
+  ipcMain.handle('secrets:has', async (e, name) => {
+    try {
+      return SECRET_NAMES.includes(name) && (await secrets.has(name))
+    } catch (err) {
+      return false
+    }
+  })
   ipcMain.handle('secrets:set', async (e, name, value) => {
     if (!SECRET_NAMES.includes(name)) {
       return unknownSecret

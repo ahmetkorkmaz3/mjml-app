@@ -14,17 +14,20 @@ const { createFigmaImporter } = await import('./figma-import')
 const VALID =
   '<mjml><mj-body><mj-section><mj-column><mj-text>Hi</mj-text></mj-column></mj-section></mj-body></mjml>'
 
-function replyModel(text) {
+function replyModel(text, prompts = []) {
   return new MockLanguageModelV4({
-    doGenerate: async () => ({
-      content: [{ type: 'text', text }],
-      finishReason: { unified: 'stop', raw: 'stop' },
-      usage: {
-        inputTokens: { total: 10, noCache: 10, cacheRead: 0, cacheWrite: 0 },
-        outputTokens: { total: 5, text: 5, reasoning: 0 },
-      },
-      warnings: [],
-    }),
+    doGenerate: async options => {
+      prompts.push(options.prompt)
+      return {
+        content: [{ type: 'text', text }],
+        finishReason: { unified: 'stop', raw: 'stop' },
+        usage: {
+          inputTokens: { total: 10, noCache: 10, cacheRead: 0, cacheWrite: 0 },
+          outputTokens: { total: 5, text: 5, reasoning: 0 },
+        },
+        warnings: [],
+      }
+    },
   })
 }
 
@@ -116,6 +119,8 @@ describe('createFigmaImporter', () => {
     getDesign.mockResolvedValue(design)
     const importer = createFigmaImporter({ secrets, renderScreenshot: vi.fn() })
     const { filePath } = await importer.importDesign(params(), () => {})
+    const prompts = []
+    createModel.mockReturnValue(replyModel(`\`\`\`mjml\n${VALID}\n\`\`\``, prompts))
 
     const res = await importer.refine(
       { filePath, content: VALID, instruction: 'make it blue', ai },
@@ -124,6 +129,16 @@ describe('createFigmaImporter', () => {
 
     expect(res.content).toBe(VALID)
     expect(res.usage.calls).toBe(1)
+    const parts = prompts[0].flatMap(message =>
+      Array.isArray(message.content) ? message.content : [],
+    )
+    expect(parts.some(part => part.type === 'file')).toBe(true)
+  })
+
+  it('returns an error result when the parameters are missing', async () => {
+    const importer = createFigmaImporter({ secrets, renderScreenshot: vi.fn() })
+    const res = await importer.importDesign(undefined, () => {})
+    expect(res.error.code).toBe('INVALID_FILE_NAME')
   })
 
   it('returns the error when the secret store cannot be read', async () => {

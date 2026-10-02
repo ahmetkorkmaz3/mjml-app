@@ -69,7 +69,7 @@ export function createFigmaImporter({ secrets, renderScreenshot, fetch = globalT
     return createModel(ai, await secrets.get(`ai.${ai.provider}`))
   }
 
-  function importDesign({ link, projectPath, fileName, ai, figma }, onProgress) {
+  function importDesign({ link, projectPath, fileName, ai, figma } = {}, onProgress) {
     return run(async signal => {
       onProgress({ step: 'parse' })
       checkFileName(projectPath, fileName)
@@ -135,7 +135,7 @@ export function createFigmaImporter({ secrets, renderScreenshot, fetch = globalT
     })
   }
 
-  function refine({ filePath, content, instruction, ai }, onProgress) {
+  function refine({ filePath, content, instruction, ai } = {}, onProgress) {
     return run(async signal => {
       const model = await getModel(ai)
       const result = await refineMjml({
