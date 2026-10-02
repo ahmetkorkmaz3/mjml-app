@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, nativeTheme, screen, shell } from 'electron'
+import { app, BrowserWindow, dialog, Menu, nativeTheme, screen, shell } from 'electron'
 import { join } from 'node:path'
 import { autoUpdater } from 'electron-updater'
 import fixPath from 'fix-path'
@@ -14,10 +14,15 @@ const isDevelopment = !app.isPackaged
 // allows app to find node when launched from GUI
 fixPath()
 
+// An error in the main process must not close the app without a trace
+process.on('uncaughtException', err => console.error('Uncaught exception:', err))
+process.on('unhandledRejection', reason => console.error('Unhandled rejection:', reason))
+
 let mainWindow = null
 let currentMenu = null
 let menuContext = { page: 'home', hasMjmlFile: false, hasPreview: false, preventAutoSave: false }
 let isRendererReady = false
+let isQuitting = false
 
 // if we double clicked on mjml file (or launched app with argument)
 // we send path to renderer, to directly open/create project
@@ -49,7 +54,7 @@ function updateWindowTheme() {
   try {
     mainWindow.setTitleBarOverlay({ color: colors.background, symbolColor: colors.symbol })
   } catch (err) {
-    console.log(err)
+    console.warn('Cannot set the title bar overlay:', err)
   }
 }
 
@@ -60,6 +65,7 @@ function rebuildMenu() {
   const w = mainWindow
   const template = buildMenuTemplate({
     platform: process.platform,
+    isPackaged: app.isPackaged,
     context: menuContext,
     theme: nativeTheme.themeSource,
     send: command => w.webContents.send('redux-command', command),
@@ -87,8 +93,76 @@ async function installExtensions() {
       forceDownload: !!process.env.UPGRADE_EXTENSIONS,
     })
   } catch (err) {
-    console.log(err)
+    console.warn('Cannot install the developer extensions:', err)
   }
+}
+
+// The renderer crashed or stopped responding: the user can reload it or quit.
+// A renderer killed by the app or the system shutdown gets no dialog.
+let isCrashDialogOpen = false
+// With `canWait`, the first button (and Escape) closes the dialog and waits.
+async function askReloadOrQuit(w, { message, detail, signal, canWait = false }) {
+  if (isCrashDialogOpen || w.isDestroyed()) {
+    return
+  }
+  isCrashDialogOpen = true
+  try {
+    const buttons = [...(canWait ? ['Wait'] : []), 'Reload', 'Quit']
+    const { response } = await dialog.showMessageBox(w, {
+      type: 'error',
+      buttons,
+      defaultId: 0,
+      // Escape never quits
+      cancelId: 0,
+      message,
+      detail,
+      signal,
+    })
+    if (w.isDestroyed() || signal?.aborted) {
+      return
+    }
+    const choice = buttons[response]
+    if (choice === 'Reload') {
+      w.webContents.reload()
+    } else if (choice === 'Quit') {
+      app.quit()
+    }
+  } finally {
+    isCrashDialogOpen = false
+  }
+}
+
+function watchRenderer(w) {
+  w.webContents.on('render-process-gone', (event, details) => {
+    console.error('The renderer process is gone:', details)
+    if (details.reason === 'clean-exit' || details.reason === 'killed' || isQuitting) {
+      return
+    }
+    askReloadOrQuit(w, {
+      message: 'The MJML window stopped working.',
+      detail: `Reason: ${details.reason}. Reload the window to continue. Unsaved changes can be lost.`,
+    })
+  })
+  // the dialog closes when the window responds again
+  let unresponsiveDialog = null
+  w.on('unresponsive', () => {
+    console.warn('The window is not responding')
+    if (isQuitting) {
+      return
+    }
+    unresponsiveDialog = new AbortController()
+    askReloadOrQuit(w, {
+      message: 'The MJML window is not responding.',
+      detail:
+        'Wait, reload the window, or quit. Unsaved changes can be lost when you reload or quit.',
+      signal: unresponsiveDialog.signal,
+      canWait: true,
+    })
+  })
+  w.on('responsive', () => {
+    unresponsiveDialog?.abort()
+    unresponsiveDialog = null
+  })
 }
 
 async function createMainWindow() {
@@ -141,6 +215,8 @@ async function createMainWindow() {
     w.show()
   })
 
+  watchRenderer(w)
+
   // the files list refreshes when the window gets the focus again
   w.on('focus', () => w.webContents.send('browser-window-focus'))
 
@@ -174,7 +250,7 @@ async function createMainWindow() {
     event.preventDefault()
     isClosing = true
     saveWindowSettings(w)
-      .catch(err => console.log(err))
+      .catch(err => console.error('Cannot save the window settings:', err))
       .finally(() => w.close())
   })
 
@@ -195,6 +271,7 @@ async function createMainWindow() {
 let beforeQuitDone = false
 
 app.on('before-quit', async event => {
+  isQuitting = true
   if (!beforeQuitDone) {
     event.preventDefault()
     await saveWindowSettings(mainWindow)

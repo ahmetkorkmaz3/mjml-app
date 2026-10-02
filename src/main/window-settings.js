@@ -31,7 +31,7 @@ export const getWindowSettings = async () => {
     const settings = await storageGet('settings')
     return settings.windowParams || {}
   } catch (e) {
-    console.log(e)
+    console.warn('Cannot read the window settings:', e)
     return {}
   }
 }

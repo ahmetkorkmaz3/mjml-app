@@ -24,11 +24,27 @@ function findItem(template, id) {
   return null
 }
 
-function build(context, platform = 'darwin', send = vi.fn(), theme = 'system') {
-  return buildMenuTemplate({ platform, context, theme, send, actions })
+function build(context, platform = 'darwin', send = vi.fn(), theme = 'system', isPackaged) {
+  return buildMenuTemplate({ platform, context, theme, send, actions, isPackaged })
 }
 
 describe('buildMenuTemplate', () => {
+  it('shows the developer tools only in a development build', () => {
+    expect(findItem(build(home, 'darwin', vi.fn(), 'system', false), 'toggle-devtools')).not.toBe(
+      null,
+    )
+    expect(findItem(build(home, 'darwin', vi.fn(), 'system', true), 'toggle-devtools')).toBe(null)
+    expect(findItem(build(home, 'win32', vi.fn(), 'system', true), 'toggle-devtools')).toBe(null)
+  })
+
+  it('opens the issues of the repository from the Help menu', () => {
+    const help = build(home).find(m => m.label === 'Help')
+    help.submenu.find(i => i.label === 'Report an Issue').click()
+    expect(actions.openExternal).toHaveBeenCalledWith(
+      'https://github.com/ahmetkorkmaz3/mjml-app/issues',
+    )
+  })
+
   it('disables the project commands on the home page', () => {
     const t = build(home)
     for (const id of PROJECT_IDS) {
