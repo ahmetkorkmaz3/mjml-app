@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "prettier": "prettier --write .",
     "prettier:check": "prettier --check .",
+    "test": "vitest run",
     "site": "vite --config site/vite.config.mjs",
     "build:site": "vite build --config site/vite.config.mjs",
     "postinstall": "electron-builder install-app-deps"
@@ -72,7 +73,8 @@
     "redux-actions": "^3.0.3",
     "redux-logger": "^3.0.6",
     "sass": "^1.105.1",
-    "vite": "^7"
+    "vite": "^7",
+    "vitest": "^5"
   },
   "authors": [
     {
