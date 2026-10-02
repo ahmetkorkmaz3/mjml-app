@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -50,5 +50,29 @@ describe('createSecretStore', () => {
   it('returns null when the file is missing', async () => {
     const store = createSecretStore({ filePath, safeStorage: fakeSafeStorage() })
     expect(await store.get('figma.token')).toBeNull()
+  })
+
+  it('rejects with SECRETS_UNREADABLE when the file is corrupt', async () => {
+    await writeFile(filePath, 'not valid json', 'utf8')
+    const store = createSecretStore({ filePath, safeStorage: fakeSafeStorage() })
+
+    await expect(store.get('ai.openai')).rejects.toMatchObject({
+      code: 'SECRETS_UNREADABLE',
+    })
+    await expect(store.set('ai.openai', 'sk-123456')).rejects.toMatchObject({
+      code: 'SECRETS_UNREADABLE',
+    })
+
+    const fileContent = await readFile(filePath, 'utf8')
+    expect(fileContent).toBe('not valid json')
+  })
+
+  it('serializes concurrent set calls', async () => {
+    const store = createSecretStore({ filePath, safeStorage: fakeSafeStorage() })
+
+    await Promise.all([store.set('ai.openai', 'aaaa1'), store.set('figma.token', 'bbbb2')])
+
+    expect(await store.get('ai.openai')).toBe('aaaa1')
+    expect(await store.get('figma.token')).toBe('bbbb2')
   })
 })
