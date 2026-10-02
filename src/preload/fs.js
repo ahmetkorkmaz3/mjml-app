@@ -14,6 +14,11 @@ export function writeFile(p, data, options) {
   return fs.writeFile(p, data, options)
 }
 
+// fails when the destination exists
+export function copyFile(src, dest) {
+  return fs.copyFile(src, dest, constants.COPYFILE_EXCL)
+}
+
 export function rename(oldPath, newPath) {
   return fs.rename(oldPath, newPath)
 }

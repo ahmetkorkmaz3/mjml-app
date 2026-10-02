@@ -57,11 +57,14 @@ export default connect(
     }
 
     render() {
-      const { preview, disablePointer, iframeBase } = this.props
+      const { preview, disablePointer, iframeBase, previewSize } = this.props
       const { content } = this.state
 
       return (
         <div className="FilesList--preview">
+          {!preview && (
+            <div className="FilesList--preview-empty">{'Select an MJML file to preview it'}</div>
+          )}
           {disablePointer && <div className="FilesList--preview-overlay abs" />}
           <div className={cx('FilesList--preview-content', { isVisible: !!preview })}>
             {preview ? (
@@ -71,6 +74,9 @@ export default connect(
                 <img className="FileList--preview-image" src={`file://${preview.content}`} />
               ) : null
             ) : null}
+            {preview && preview.type === 'html' && (
+              <div className="FilesList--preview-width">{`${previewSize.get('current')} px`}</div>
+            )}
           </div>
         </div>
       )

@@ -15,6 +15,7 @@ export const {
   alreadyExists,
   isEmptyOrDontExist,
   createOrEmpty,
+  copyFile,
 } = api.fs
 
 export function sortFiles(files) {
