@@ -227,14 +227,14 @@ export default connect(
                         placeholder="Location"
                         type="text"
                       />
-                      <Button ghost onClick={this.handleBrowse} type="button">
+                      <Button variant="secondary" onClick={this.handleBrowse} type="button">
                         {'Browse'}
                       </Button>
                     </div>
                     {fullPath && (
                       <div className="mt-10 t-small">
                         {'Project will be created at: '}
-                        <b className="c-white wb-ba">{fullPath}</b>
+                        <b className="wb-ba">{fullPath}</b>
                       </div>
                     )}
                     {projectLocStatus === 'checking' && (
@@ -292,12 +292,12 @@ export default connect(
                 ) : null}
               </Button>
               {step === 'template' && (
-                <Button ghost onClick={this.handlePrev}>
+                <Button variant="secondary" onClick={this.handlePrev}>
                   <IconArrowLeft className="mr-10" />
                   {'Choose location and name'}
                 </Button>
               )}
-              <Button transparent onClick={closeModal}>
+              <Button variant="secondary" onClick={closeModal}>
                 {'Cancel'}
               </Button>
             </div>

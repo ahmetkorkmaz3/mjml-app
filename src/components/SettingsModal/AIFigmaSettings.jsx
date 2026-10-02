@@ -58,11 +58,11 @@ function SecretInput({ name, label }) {
         placeholder={saved ? 'Saved (type to replace)' : 'Not set'}
         onChange={e => setValue(e.target.value.trim())}
       />
-      <Button className="ml-5" ghost disabled={!value} onClick={() => save(value)}>
+      <Button className="ml-5" variant="secondary" disabled={!value} onClick={() => save(value)}>
         {'Save'}
       </Button>
       {saved && (
-        <Button className="ml-5" transparent onClick={() => save('')}>
+        <Button className="ml-5" variant="ghost" onClick={() => save('')}>
           {'Remove'}
         </Button>
       )}
@@ -81,7 +81,7 @@ function TestConnection({ run }) {
 
   return (
     <div className="d-f ai-c">
-      <Button ghost onClick={test}>
+      <Button variant="secondary" onClick={test}>
         {'Test connection'}
       </Button>
       {result && (
