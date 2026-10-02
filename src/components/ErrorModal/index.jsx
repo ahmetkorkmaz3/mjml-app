@@ -65,7 +65,9 @@ export default connect(
           <div className="ModalFooter">
             <Button
               variant="primary"
-              onClick={() => api.shell.openExternal('https://github.com/mjmlio/mjml-app/issues')}
+              onClick={() =>
+                api.shell.openExternal('https://github.com/ahmetkorkmaz3/mjml-app/issues')
+              }
             >
               <IconOpen />
               {'Report the Issue'}

@@ -1,10 +1,11 @@
 const DOCS_URL = 'https://documentation.mjml.io/'
 const TRY_URL = 'https://mjml.io/try-it-live'
-const ISSUES_URL = 'https://github.com/mjmlio/mjml-app/issues'
+const ISSUES_URL = 'https://github.com/ahmetkorkmaz3/mjml-app/issues'
 
 // Builds the application menu for the page that is open. Each custom item
-// sends its `id` to the renderer (src/helpers/commands.js).
-export function buildMenuTemplate({ platform, context, theme, send, actions }) {
+// sends its `id` to the renderer (src/helpers/commands.js). The developer
+// tools are only in the menu of a development build (`isPackaged` false).
+export function buildMenuTemplate({ platform, context, theme, send, actions, isPackaged = false }) {
   const isMac = platform === 'darwin'
   const isProject = context.page === 'project'
   const item = (id, label, accelerator, enabled = true) => ({
@@ -102,11 +103,16 @@ export function buildMenuTemplate({ platform, context, theme, send, actions }) {
       },
       { type: 'separator' },
       { label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => actions.reload() },
-      {
-        label: 'Toggle Developer Tools',
-        accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-        click: () => actions.toggleDevTools(),
-      },
+      ...(isPackaged
+        ? []
+        : [
+            {
+              id: 'toggle-devtools',
+              label: 'Toggle Developer Tools',
+              accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+              click: () => actions.toggleDevTools(),
+            },
+          ]),
       {
         label: 'Toggle Full Screen',
         accelerator: isMac ? 'Ctrl+Command+F' : 'F11',

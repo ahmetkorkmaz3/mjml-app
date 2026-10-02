@@ -27,13 +27,21 @@ yarn site            # dev server for the marketing site in site/
 
 Unit tests (Vitest) cover the main process code of the Figma import and of the window and menus, and the pure renderer helpers and reducers. A tested renderer module must not import `helpers/api`, because it reads `window`. Tests are next to the code (`*.test.js`) and run in Node.js, so they do not import `electron`. CI (`.github/workflows/ci.yml`) runs `yarn lint`, `yarn prettier:check`, `yarn test` and `yarn dist:dir` on macOS, Linux and Windows. A commit must pass `yarn lint`, `yarn prettier:check` and `yarn test`.
 
+### Release
+
+`.github/workflows/release.yml` runs when a `v*` tag is pushed. On macOS, Windows and Linux it runs the checks, then `electron-vite build` and `electron-builder --publish always`. The files go to a draft GitHub release (`publish` in `electron-builder.yml`: `ahmetkorkmaz3/mjml-app`). The tag must match the version of `package.json`. The secrets are in `README.md`. `electron-builder.yml` sets:
+
+- macOS: arm64 and x64 builds, `hardenedRuntime`, `build/entitlements.mac.plist` and `notarize: true`. Notarization runs only when the app is signed and the `APPLE_*` variables are set, so `yarn dist:dir` (`-c.mac.identity=null`) works without credentials.
+- `electronFuses`: no `ELECTRON_RUN_AS_NODE`, no `NODE_OPTIONS`, no `--inspect`, the app loads only from the checked `app.asar`. Do not spawn `process.execPath` as Node.js. Playwright `_electron.launch` cannot attach to a packaged build (it uses `--inspect`), so start the packaged binary with `--remote-debugging-port` and use `chromium.connectOverCDP`.
+- `files`: the source maps, type declarations, `.md` files and the test, docs and example folders of `node_modules` are not packaged.
+
 ## Architecture
 
 The app has three parts. `electron.vite.config.mjs` builds each one.
 
-- **Main process** (`src/main/`): `index.js` creates the window, builds the menu (`menu.js`), saves the window size and position on quit (`window-settings.js`) and runs `electron-updater` in packaged builds. `ipc.js` registers the IPC handlers: settings storage, dialogs, shell, clipboard, screenshots and templating (`templating.js`, erb and Handlebars). When the app opens a `.mjml` file (argument or macOS `open-file`), it sends `openPath` to the renderer.
+- **Main process** (`src/main/`): `index.js` creates the window, builds the menu (`menu.js`), saves the window size and position on quit (`window-settings.js`) and runs `electron-updater` in packaged builds. It logs `uncaughtException` and `unhandledRejection`, and shows a Reload / Quit dialog when the renderer crashes (`render-process-gone`) or stops responding (`unresponsive`, with Wait). `ipc.js` registers the IPC handlers: settings storage, dialogs, shell, clipboard, screenshots and templating (`templating.js`, erb and Handlebars). When the app opens a `.mjml` file (argument or macOS `open-file`), it sends `openPath` to the renderer.
 - **Preload** (`src/preload/`): the window uses `contextIsolation: true`, `nodeIntegration: false` and `sandbox: false`. The preload script is the only renderer code with Node.js. It exposes `window.api` with the context bridge: file system helpers (`fs.js`), MJML rendering (`mjml.js`), Mailjet sending (`send-email.js`), `path`, and wrappers for the IPC calls. Errors lose their `code` when they cross the bridge, so the helpers return booleans when the renderer needs the reason.
-- **Renderer** (`src/renderer/main.jsx` + the folders of `src/`): React code with no Node.js access. Use `helpers/api` (`window.api`), `helpers/fs` and `import { path } from 'helpers/api'`. Do not import `fs`, `path`, `os` or `electron` in the renderer.
+- **Renderer** (`src/renderer/main.jsx` + the folders of `src/`): React code with no Node.js access. The built `index.html` gets a Content-Security-Policy meta tag (`contentSecurityPolicyPlugin` in `electron.vite.config.mjs`, build only, because the dev server uses inline scripts). The email preview iframe inherits it: inline and `https:` styles, `https:`/`data:`/`file:` fonts and images are allowed, scripts only from `'self'`. Update the policy when the renderer needs a new origin. Use `helpers/api` (`window.api`), `helpers/fs` and `import { path } from 'helpers/api'`. Do not import `fs`, `path`, `os` or `electron` in the renderer.
 
 Other points:
 
@@ -46,7 +54,7 @@ Other points:
 - **Styles**: Sass with `@use` (no `@import`). All colors, sizes and shadows are CSS custom properties in `src/styles/tokens.scss`. Do not use fixed colors in components.
 - **Theme**: `settings.appearance.theme` is `system`, `light` or `dark`. `components/Application/useAppTheme.js` sets `data-theme` on `<html>`, puts the resolved theme in `state.theme` (for CodeMirror) and calls `theme:set`, so the main process sets `nativeTheme.themeSource`. The main process reads the stored theme before it creates the window, and the preload gives it to the first frame as `api.initialTheme`.
 - **Window**: the title bar is hidden (`hiddenInset` with vibrancy on macOS, `titleBarOverlay` on Windows and Linux). Each page puts its controls in `components/TitleBar`. `src/main/window-bounds.js` keeps the saved bounds on a connected display.
-- **Menu and commands**: `src/main/menu.js` builds the menu from the context of the page (`menu:setContext`). Each item sends a command name on `redux-command`. The pages register the handlers with `components/PageCommands.jsx` (`helpers/commands.js`). Context menus use `showContextMenu` (`helpers/contextMenu.js`, IPC `menu:popup`).
+- **Menu and commands**: `src/main/menu.js` builds the menu from the context of the page (`menu:setContext`). "Toggle Developer Tools" is only in the menu when `isPackaged` is false. Each item sends a command name on `redux-command`. The pages register the handlers with `components/PageCommands.jsx` (`helpers/commands.js`). Context menus use `showContextMenu` (`helpers/contextMenu.js`, IPC `menu:popup`).
 - **Status bar**: `components/StatusBar` shows `state.editorStatus` (cursor, dirty state, render time) and the MJML errors of `state.preview`.
 - **Layout**: `settings.layout` keeps the sidebar width, the collapsed sidebar and preview, and the sort of the project list.
 
