@@ -46,6 +46,12 @@ export default handleActions(
         return projects.unshift(path)
       }),
 
+    // the project that the user opened last is at the start of the list
+    PROJECT_TOUCH: (state, { payload: path }) =>
+      state.update('projects', projects =>
+        projects.includes(path) ? projects.filter(p => p !== path).unshift(path) : projects,
+      ),
+
     PROJECT_REMOVE: (state, { payload: path }) =>
       state.update('projects', projects => projects.filter(p => p !== path)),
 
