@@ -132,9 +132,9 @@ The toolbar buttons and the menu call the same handlers. Find and Undo inside th
 ```
 
 - **Title bar:** the app name, a compact search field (240 px, Cmd+F focuses it), "Open…", the primary "New Project" button and Settings.
-- **Header row:** "Recent projects" with the count and a sort menu: Last opened (the current list order), Name, Last modified. The sort is saved in `settings.layout.projectSort`.
+- **Header row:** "Recent projects" with the count and a sort menu: Last opened, Name, Last modified. "Last opened" puts the project that the user opened last at the start: `openProject` moves the path to the start of the list (today the list only keeps the order in which the projects were added). The sort is saved in `settings.layout.projectSort`.
 - **Cards:** a responsive grid (`repeat(auto-fill, minmax(200px, 1fr))`). Each card has the thumbnail (rounded, with a border, a 4:5 crop of the top of the email), the name, the parent folder (with `~` for the home folder) and the last modified time ("2 hours ago"). The modified time comes from a new preload helper `fs.getMtime(path)`. A pure helper `formatRelativeTime(date, now)` gets unit tests.
-- **Interaction:** a click selects, a double click or Enter opens (desktop convention). Cmd+click and Shift+click select more cards. Right click opens a native menu: Open, Reveal in Finder, Rename…, Duplicate, Remove from List. The floating round buttons go away. When there is a selection, the header row shows "2 selected · Remove from List · Clear" in place of the separate mass actions bar.
+- **Interaction:** a click selects, a double click or Enter opens (desktop convention). Cmd+click and Shift+click select more cards. Right click opens a native menu: Open, Reveal in Finder, Rename…, Duplicate, Remove from List. The floating round buttons go away. When there is a selection, the header row shows "2 selected · Export Index to HTML · Export All Files · Export Images · Clear" in place of the separate mass actions bar (the same three export actions as today).
 - **Empty state:** a centered block with the MJML logo, "Create your first email", the two buttons New Project and Open Project, and "or drop an .mjml file or a folder here".
 - **Drop zone:** the existing file drop keeps its behavior and gets the new overlay style (dashed `--accent` border, `--bg-selected` fill).
 
@@ -142,7 +142,7 @@ The toolbar buttons and the menu call the same handlers. Find and Undo inside th
 
 **`Dialog` component (replaces the look of `Modal`).** The `Modal` API stays (`isOpened`, `onClose`). New props: `title`, `size` (`sm` 420, `md` 560, `lg` 760) and `footer`. The dialog has `--radius-lg`, `--bg-elevated`, a soft shadow and a 1 px border. The header shows the title in `--text-lg`. The footer puts the buttons on the right: Cancel, then the primary button. Enter does the primary action when the focus is not in a text area. Esc cancels. The focus stays inside the dialog (focus trap) and goes back to the opener on close. The open animation is a fade with a 0.98 → 1 scale. The `Modal--label` tab goes away. All dialogs use it: New Project, Template Chooser, Add File, Remove File, Rename, Send, Figma Import, Refine, Templating, Error, About, Confirm.
 
-**Settings.** A `lg` dialog with a fixed height (560 px) and a left list of sections like macOS System Settings: Appearance (new), Editor, MJML, Preview, AI & Figma, Snippets. Appearance has the theme (System / Light / Dark as a segmented control) and the editor font size (11 to 18 px, new setting `editor.fontSize`, default 13). The controls in each section use rows: the label on the left, the control on the right, a short help text under the label.
+**Settings.** A `lg` dialog with a fixed height (560 px) and a left list of sections like macOS System Settings: Appearance (new), Editor, MJML, Preview, AI & Figma, Snippets. Appearance has the theme (System / Light / Dark as a segmented control) and the editor font size (the existing `editor.fontSize` setting, values 12, 13, 14, 15, 16, 18, default 13). The controls in each section use rows: the label on the left, the control on the right, a short help text under the label.
 
 **Controls.** One `Button` with `variant`: `primary`, `secondary` (default), `ghost` (toolbar), `danger`, and `size`: `sm` 24, `md` 28, `lg` 32. The old boolean props (`primary`, `ghost`, `transparent`, `warn`, `small`) keep working and map to the new variants, so each file can move at its own speed. New `SegmentedControl` and `Tooltip` (CSS with `data-tooltip`, 500 ms delay) components. `TextInput`, `Select` (react-select styles from the tokens), `CheckBox` and `RadioGroup` get 28 px height, `--radius-md` and the focus ring.
 
@@ -156,7 +156,7 @@ The toolbar buttons and the menu call the same handlers. Find and Undo inside th
 
 - If `theme:set` fails, the app keeps the renderer theme. The native parts can then differ. The app logs the error and does not show it to the user.
 - If `menu:popup` fails, the action does nothing. Each command in a context menu is also in the main menu.
-- If `getMtime` fails (the folder is gone), the card shows "Folder not found" in `--warning` and the Open action shows the existing error.
+- `loadProjects` already removes the projects whose folder is gone. If `getMtime` fails for another reason, it returns `null` and the card shows no time.
 - Saved window bounds outside the displays fall back to the centered default size.
 
 ## 8. Testing and checks
