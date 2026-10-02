@@ -20,6 +20,10 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4",
+    "@ai-sdk/google": "^4",
+    "@ai-sdk/openai": "^4",
+    "@ai-sdk/openai-compatible": "^3",
     "ai": "^7",
     "electron-json-storage": "^4.6.0",
     "electron-updater": "^6.8.9",
