@@ -31,6 +31,7 @@ import ButtonDropdown from 'components/Button/ButtonDropdown'
 import FilesList from 'components/FilesList'
 import TitleBar from 'components/TitleBar'
 import PageCommands from 'components/PageCommands'
+import StatusBar from 'components/StatusBar'
 import router from 'router'
 
 import BackButton from './BackButton'
@@ -365,6 +366,12 @@ const ConnectedProjectPage = connect(
               focusHome
             />
           </div>
+
+          <StatusBar
+            projectPath={path}
+            isMJML={!!isMJMLFile}
+            onGoToLine={line => this._editor && this._editor.goToLine(line)}
+          />
 
           <SendModal currentProjectPath={path} />
           <AddFileModal rootPath={path} onAdd={this.handleAddFile} />
