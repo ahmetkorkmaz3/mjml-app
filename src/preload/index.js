@@ -66,6 +66,7 @@ const api = {
 
   menu: {
     setContext: context => ipcRenderer.invoke('menu:setContext', context),
+    popup: items => ipcRenderer.invoke('menu:popup', items),
   },
 
   storage: {
