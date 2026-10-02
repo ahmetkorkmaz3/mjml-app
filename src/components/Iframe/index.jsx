@@ -61,6 +61,10 @@ class Iframe extends Component {
 
     return (
       <iframe
+        // no allow-scripts: the email HTML (inline handlers included) must not
+        // run code, it could reach window.parent.api. allow-same-origin lets
+        // this component write the document and handle the link clicks.
+        sandbox="allow-same-origin"
         tabIndex={-1}
         scrolling={scrolling ? undefined : 'no'}
         ref={n => (this._iframe = n)}
