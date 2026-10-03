@@ -29,7 +29,12 @@ Download the file for your platform from the [releases page](https://github.com/
 - Windows: the `.exe` installer
 - Linux: the `.AppImage` or the `.tar.gz` file
 
-The app updates itself from the GitHub releases.
+The installers are not signed, so macOS and Windows show a warning the first time you open the app.
+
+- macOS: open the `.dmg` and move MJML to Applications. Then run `xattr -dr com.apple.quarantine /Applications/MJML.app` in Terminal. Or open the app, then go to System Settings > Privacy & Security and click "Open Anyway".
+- Windows: when SmartScreen shows "Windows protected your PC", click "More info", then "Run anyway".
+
+On Windows and Linux (`.AppImage`), the app updates itself from the GitHub releases. On macOS, download the new `.dmg` from the releases page.
 
 ## Build from source
 
@@ -62,19 +67,7 @@ The `Release` workflow (`.github/workflows/release.yml`) builds the installers o
 
 The installed apps find the update only after you publish the release.
 
-Add these secrets to the repository (Settings > Secrets and variables > Actions):
-
-| Secret                        | Use                                                                    |
-| ----------------------------- | ---------------------------------------------------------------------- |
-| `CSC_LINK`                    | macOS "Developer ID Application" certificate (`.p12`, base64 encoded) |
-| `CSC_KEY_PASSWORD`            | Password of the macOS certificate                                      |
-| `APPLE_ID`                    | Apple ID for notarization                                              |
-| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password of the Apple ID                                  |
-| `APPLE_TEAM_ID`               | Apple developer team ID                                                |
-| `WIN_CSC_LINK`                | Windows code signing certificate (`.pfx`, base64 encoded)              |
-| `WIN_CSC_KEY_PASSWORD`        | Password of the Windows certificate                                    |
-
-The workflow uses the `GITHUB_TOKEN` of the run to upload the files. Without the macOS secrets, the macOS app is not signed and not notarized. Without the Windows secrets, the Windows installer is not signed.
+The workflow uses the `GITHUB_TOKEN` of the run to upload the files. It does not sign the macOS app or the Windows installer, and it does not notarize the macOS app.
 
 ## License
 

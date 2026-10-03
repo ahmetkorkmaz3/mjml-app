@@ -23,7 +23,7 @@ electronFuses:
   enableNodeCliInspectArguments: false
   enableEmbeddedAsarIntegrityValidation: true
   onlyLoadAppFromAsar: true
-  # an unsigned build (yarn dist:dir) gets a new ad hoc signature after the fuses change
+  # the unsigned macOS build gets a new ad hoc signature after the fuses change
   resetAdHocDarwinSignature: true
 
 publish:
@@ -49,13 +49,9 @@ fileAssociations:
 mac:
   artifactName: ${name}-${version}-${os}.${ext}
   category: public.app-category.utility
-  hardenedRuntime: true
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
-  # notarytool runs only when the APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD and
-  # APPLE_TEAM_ID (or APPLE_API_KEY*) variables are set and the app is signed
-  notarize: true
-  # Apple silicon and Intel builds, electron-updater picks the right zip
+  # no Apple Developer ID: the app gets only an ad hoc signature and is not notarized
+  identity: null
+  # Apple silicon and Intel builds
   target:
     - target: dmg
       arch:

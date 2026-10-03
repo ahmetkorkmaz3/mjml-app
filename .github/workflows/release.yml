@@ -1,6 +1,6 @@
 name: Release
 
-# Push a tag like v3.1.0 (the version of package.json) to build, sign and
+# Push a tag like v3.1.0 (the version of package.json) to build and
 # upload the installers to a draft GitHub release. Publish the draft by hand.
 on:
   push:
@@ -31,13 +31,3 @@ jobs:
         run: yarn electron-vite build && yarn electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS signing (Developer ID Application certificate, .p12 in base64)
-          # and notarization. The Windows job must not get the macOS certificate.
-          CSC_LINK: ${{ runner.os == 'macOS' && secrets.CSC_LINK || '' }}
-          CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.CSC_KEY_PASSWORD || '' }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # Windows signing (code signing certificate, .pfx in base64)
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
