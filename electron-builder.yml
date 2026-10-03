@@ -47,7 +47,7 @@ fileAssociations:
   icon: icon
 
 mac:
-  artifactName: ${name}-${version}-${os}.${ext}
+  artifactName: ${name}-${version}-${os}-${arch}.${ext}
   category: public.app-category.utility
   # no Apple Developer ID: the app gets only an ad hoc signature and is not notarized
   identity: null
@@ -82,11 +82,9 @@ win:
     - target: nsis
       arch:
         - x64
-        - ia32
     - target: zip
       arch:
         - x64
-        - ia32
 
 nsis:
   oneClick: false
