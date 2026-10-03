@@ -4,10 +4,10 @@
 - Import from Figma (Figma desktop MCP server or REST API) and Refine with AI (Anthropic, OpenAI, Google or an OpenAI-compatible provider)
 - [MJML](https://github.com/mjmlio/mjml) 5
 - Export HTML copies the linked local files (images) next to the exported file
-- Security hardening: no scripts in the email preview, no navigation of the window, a Content-Security-Policy, Electron fuses, a hardened runtime and notarization on macOS
+- Security hardening: no scripts in the email preview, no navigation of the window, a Content-Security-Policy, Electron fuses
 - Bug fixes: Ctrl+W, the project times, the stacked dialog keys, the Windows menu, the silent failures of the projects, settings and snippets
 - A dialog to reload or quit when the window stops working
-- Builds for Apple silicon and Intel Macs, auto-update from the GitHub releases of [ahmetkorkmaz3/mjml-app](https://github.com/ahmetkorkmaz3/mjml-app)
+- Builds for Apple silicon and Intel Macs, Windows and Linux on the GitHub releases of [ahmetkorkmaz3/mjml-app](https://github.com/ahmetkorkmaz3/mjml-app). The builds are not signed. Windows and Linux (AppImage) update themselves
 
 ### 2.10.0 (2018-08-30)
 

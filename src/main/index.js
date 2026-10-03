@@ -353,7 +353,8 @@ app.whenReady().then(async () => {
   }
   mainWindow = await createMainWindow()
   rebuildMenu()
-  if (!isDevelopment) {
+  // Squirrel.Mac installs only signed updates, the macOS build is not signed
+  if (!isDevelopment && process.platform !== 'darwin') {
     // no network or no release feed must not stop the app
     autoUpdater.on('error', err => console.error('Update check failed:', err.message))
     autoUpdater.checkForUpdatesAndNotify().catch(() => {})
