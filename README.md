@@ -62,7 +62,7 @@ Or download the file for your platform from the [latest release](https://github.
 
 ### The first launch
 
-The installers are not signed, so macOS and Windows show a warning the first time you open the app.
+The installers are not signed, so macOS and Windows show a warning the first time you open the app. The Homebrew cask removes the quarantine attribute, so a Homebrew install opens with no warning.
 
 - **macOS**: open the `.dmg` and move MJML to Applications. Then run this command in Terminal:
 

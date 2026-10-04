@@ -22,6 +22,14 @@ cask "mjml-app" do
 
   app "MJML.app"
 
+  # The app has only an ad hoc signature (no Apple Developer ID), so Gatekeeper
+  # blocks a quarantined copy. Remove the quarantine attribute after the install.
+  postflight_steps do
+    run "/usr/bin/xattr",
+        args:           ["-dr", "com.apple.quarantine", "{{appdir}}/MJML.app"],
+        writable_paths: ["{{appdir}}/MJML.app"]
+  end
+
   uninstall quit: "com.mjmlio.mjmlapp"
 
   zap trash: [
@@ -32,7 +40,7 @@ cask "mjml-app" do
   ]
 
   caveats <<~EOS
-    MJML is not signed. If macOS blocks the first start, open
-    System Settings > Privacy & Security and select "Open Anyway".
+    MJML is not signed. The cask removes the quarantine attribute,
+    so macOS does not block the first start.
   EOS
 end
