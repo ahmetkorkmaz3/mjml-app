@@ -106,6 +106,8 @@ The maintainer makes the releases. The `Release` workflow (`.github/workflows/re
 2. Commit, then push a tag with the same version: `git tag v3.2.0 && git push origin v3.2.0`.
 3. When the workflow is done, open the draft release on GitHub. Check the files and publish the release.
 
+When you publish the release, the `Homebrew` workflow (`.github/workflows/homebrew.yml`) sets the version and the `sha256` values in `homebrew/mjml-app.rb` and pushes the cask to [ahmetkorkmaz3/homebrew-tap](https://github.com/ahmetkorkmaz3/homebrew-tap). The workflow needs the `HOMEBREW_TAP_TOKEN` secret: a fine-grained token with "Contents: Read and write" access to `homebrew-tap`. To push the cask of an old release again, run the workflow by hand with the tag. Edit the cask in `homebrew/mjml-app.rb`, not in the tap.
+
 The installed apps find the update only after you publish the release. The workflow does not sign the macOS app or the Windows installer, and it does not notarize the macOS app.
 
 ## License

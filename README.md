@@ -46,7 +46,13 @@
 
 ## Installation
 
-Download the file for your platform from the [latest release](https://github.com/ahmetkorkmaz3/mjml-app/releases/latest):
+On macOS, you can install the app with [Homebrew](https://brew.sh):
+
+```bash
+brew install --cask ahmetkorkmaz3/tap/mjml-app
+```
+
+Or download the file for your platform from the [latest release](https://github.com/ahmetkorkmaz3/mjml-app/releases/latest):
 
 | Platform | File                                                    |
 | -------- | ------------------------------------------------------- |
@@ -70,7 +76,7 @@ The installers are not signed, so macOS and Windows show a warning the first tim
 
 ### Updates
 
-On Windows and Linux (`.AppImage`), the app updates itself from the GitHub releases. On macOS, download the new `.dmg` from the [releases page](https://github.com/ahmetkorkmaz3/mjml-app/releases).
+On Windows and Linux (`.AppImage`), the app updates itself from the GitHub releases. On macOS, run `brew upgrade --cask mjml-app`, or download the new `.dmg` from the [releases page](https://github.com/ahmetkorkmaz3/mjml-app/releases).
 
 ## Build from source
 

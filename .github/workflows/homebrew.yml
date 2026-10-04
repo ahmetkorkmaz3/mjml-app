@@ -1,0 +1,65 @@
+name: Homebrew
+
+# When a release is published, set the version and the sha256 of the macOS
+# DMGs in homebrew/mjml-app.rb and push the cask to ahmetkorkmaz3/homebrew-tap.
+# The release workflow makes a draft, and the files of a draft are not public,
+# so this workflow waits for the publication.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag of a published release (for example v3.1.0)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  homebrew-tap:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Check the token
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "::error::The HOMEBREW_TAP_TOKEN secret is not set. See CONTRIBUTING.md."
+            exit 1
+          fi
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with:
+          repository: ahmetkorkmaz3/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+      - name: Download the macOS DMGs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*-mac-*.dmg' --dir dist
+      - name: Update the cask and push it to the tap
+        run: |
+          version="${TAG#v}"
+          arm=$(sha256sum "dist/mjml-app-$version-mac-arm64.dmg" | cut -d' ' -f1)
+          intel=$(sha256sum "dist/mjml-app-$version-mac-x64.dmg" | cut -d' ' -f1)
+          mkdir -p tap/Casks
+          sed -e "s/^  version \".*\"/  version \"$version\"/" \
+              -e "s/^  sha256 arm: *\".*\",/  sha256 arm:   \"$arm\",/" \
+              -e "s/^         intel: \".*\"/         intel: \"$intel\"/" \
+              homebrew/mjml-app.rb > tap/Casks/mjml-app.rb
+          cat tap/Casks/mjml-app.rb
+          grep -q "\"$arm\"" tap/Casks/mjml-app.rb && grep -q "\"$intel\"" tap/Casks/mjml-app.rb \
+            || { echo "::error::The sha256 lines of homebrew/mjml-app.rb did not change"; exit 1; }
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/mjml-app.rb
+          if git diff --cached --quiet; then
+            echo "The cask is already up to date."
+            exit 0
+          fi
+          git commit -m "mjml-app $version"
+          git push
