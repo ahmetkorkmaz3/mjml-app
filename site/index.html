@@ -1,173 +1,426 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>MJML App - The desktop app for MJML</title>
-  <meta name='description' content='mjml app: html email editor'>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="shortcut icon" type="image/x-icon" href="https://mjml.io/favicon.ico">
-</head>
-<body class="tk-proxima-nova with-scroll">
-
-  <script src="https://use.typekit.net/tds2uft.js"></script>
-  <script>try{Typekit.load({ async: true });}catch(e){}</script>
-
-  <div class="d-f ai-c p-20 flow-h-20" style="margin-bottom: 120px">
-    <a href="https://mjml.io">
-      <img height="40" src="assets/logo-mjml.svg" />
-    </a>
-    <a target="_blank" href="https://github.com/mjmlio/mjml#introduction">About</a>
-    <a target="_blank" href="https://mjml.io/documentation/">Documentation</a>
-    <a class="ml-auto mr-10" target="_blank" href="https://github.com/mjmlio/mjml-app">Github</a>
-  </div>
-
-  <div class="row jc-sa">
-    <div class="col ml-20 f-1 fs-0 d-f fd-c ai-fe">
-      <div style="max-width: 450px; margin-top: 50px">
-        <h1>
-          A lightweight app that makes responsive email <span id="word">smooth</span>
-        </h1>
-        <p>
-          You can now leverage the power of <b>MJML</b> directly from its official
-          desktop app. Import and manage templates, <b>edit</b> your email with
-          live rendering, <b>customize</b> your environment and <b>send test emails</b> straight
-          from the app!
-        </p>
-        <div class="flow-h-10 d-f ai-c" style="margin-top: 40px">
-          <a id="dl-general" href="https://github.com/mjmlio/mjml-app/releases" class="Button primary">
-            <b id="dl-dl-dl">Download </b>
-            <span id="dl-btn-label"></span>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MJML App — The desktop editor for MJML emails</title>
+    <meta
+      name="description"
+      content="Write responsive emails with MJML and see the result as you type. Free and open source, for macOS, Windows and Linux."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f8f8fa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121317" media="(prefers-color-scheme: dark)" />
+    <meta property="og:title" content="MJML App" />
+    <meta property="og:description" content="The desktop editor for MJML emails, with a live preview." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/png" href="../build/icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    />
+    <script>
+      document.documentElement.classList.add('js')
+    </script>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="container nav-inner">
+        <a class="brand" href="#top">
+          <img src="../build/icon.png" alt="" width="28" height="28" />
+          <span>MJML App</span>
+        </a>
+        <nav class="nav-links" aria-label="Main">
+          <a href="#features">Features</a>
+          <a href="#figma">Figma</a>
+          <a href="#download">Download</a>
+          <a class="nav-github" href="https://github.com/ahmetkorkmaz3/mjml-app" aria-label="GitHub">
+            <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+              />
+            </svg>
           </a>
-          <div class="d-f ai-c ml-auto">
-            <a id="dl-linux" class="image-link" href="https://github.com/mjmlio/mjml-app/releases">
-              <img height="40" src="assets/linux.png" />
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="container hero-text">
+          <p class="eyebrow">
+            <span class="dot"></span>
+            Free and open source · <span data-version>MJML 5</span>
+          </p>
+          <h1>Write responsive emails.<br /><span class="gradient">See them as you type.</span></h1>
+          <p class="lead">
+            MJML App is a desktop editor for <a href="https://mjml.io">MJML</a>. Write the markup on
+            the left, and the email renders on the right in milliseconds. Import a Figma design,
+            send a test email and export clean HTML, all from one window.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" id="hero-download" href="#download">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"
+                />
+              </svg>
+              <span id="hero-download-label">Download</span>
             </a>
-            <a id="dl-osx" class="image-link" href="https://github.com/mjmlio/mjml-app/releases">
-              <img height="40" src="assets/mac.png" />
-            </a>
-            <a id="dl-win" class="image-link" href="https://github.com/mjmlio/mjml-app/releases">
-              <img height="40" src="assets/windows.png" />
+            <a class="button ghost" href="https://github.com/ahmetkorkmaz3/mjml-app">
+              View on GitHub
             </a>
           </div>
+          <p class="hero-note" id="hero-note">macOS · Windows · Linux</p>
         </div>
-      </div>
-    </div>
-    <div class="col f-1 r">
-      <div class="hero-img">
-        <img class="shadow" width="300" src="assets/screenshot.png" />
-        <img class="shadow" width="300" src="assets/screenshot-2.png" />
-        <img class="shadow" width="300" src="assets/screenshot-3.png" />
-        <img class="shadow" width="300" src="assets/screenshot-4.png" />
-      </div>
-    </div>
-  </div>
 
-  <div class="row" style="margin-top: 250px; min-height: 440px">
-    <div class="col f-1 d-f jc-fe ml-20">
-      <div style="max-width: 450px">
-        <div class="heading">Features</div>
-        <h3>Browse the official <b>templates library</b></h3>
+        <div class="container">
+          <div class="shot reveal">
+            <picture>
+              <source media="(prefers-color-scheme: dark)" srcset="../assets/screenshot-dark.png" />
+              <img
+                src="../assets/screenshot.png"
+                width="1600"
+                height="1002"
+                alt="The MJML App editor: MJML code on the left, the rendered email on the right"
+              />
+            </picture>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="features">
+        <div class="container">
+          <div class="section-head reveal">
+            <p class="kicker">Features</p>
+            <h2>Everything you need to ship an email</h2>
+            <p>From the first tag to the test in your inbox, without a browser tab or a build step.</p>
+          </div>
+
+          <div class="grid">
+            <article class="card reveal">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 5h18v14H3zM12 5v14" />
+                </svg>
+              </div>
+              <h3>Live preview</h3>
+              <p>
+                The email renders as you type. Switch between the desktop and mobile widths, and see
+                the render time in the status bar.
+              </p>
+            </article>
+
+            <article class="card reveal">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" />
+                </svg>
+              </div>
+              <h3>A real code editor</h3>
+              <p>
+                CodeMirror 6 with MJML autocompletion for tags and attributes. MJML errors show in the
+                gutter, next to the line.
+              </p>
+            </article>
+
+            <article class="card reveal">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
+                </svg>
+              </div>
+              <h3>Figma import with AI</h3>
+              <p>
+                Select a frame in Figma and get MJML back. Then ask the AI to refine it. Use your own
+                key for Claude, OpenAI or Gemini, or a local model with Ollama.
+              </p>
+            </article>
+
+            <article class="card reveal">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 11l18-8-8 18-2-8z" />
+                </svg>
+              </div>
+              <h3>Test emails</h3>
+              <p>
+                Send the email to your inbox with your Mailjet account, and check it in real email
+                clients before you ship.
+              </p>
+            </article>
+
+            <article class="card reveal">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 4h10l6 6v10H4zM14 4v6h6M8 14h8M8 17h5" />
+                </svg>
+              </div>
+              <h3>Templating</h3>
+              <p>
+                Preview Handlebars or ERB templates with variables in YAML or JSON. Each project keeps
+                its own variables.
+              </p>
+            </article>
+
+            <article class="card reveal">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3" />
+                </svg>
+              </div>
+              <h3>HTML export</h3>
+              <p>
+                Export minified or readable HTML. The app copies the local images that the email
+                uses, and never overwrites a file.
+              </p>
+            </article>
+
+            <article class="card reveal">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 6h7v5H4zM13 6h7v12h-7zM4 13h7v5H4z" />
+                </svg>
+              </div>
+              <h3>Partials</h3>
+              <p>
+                Split a long email into headers and footers with <code>mj-include</code>. A partial
+                file shows its own preview.
+              </p>
+            </article>
+
+            <article class="card reveal">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z" />
+                </svg>
+              </div>
+              <h3>Light and dark</h3>
+              <p>
+                A native look on each platform, with a light and a dark theme that follow your
+                system.
+              </p>
+            </article>
+
+            <article class="card reveal">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 12a8 8 0 11-2.3-5.6M20 4v4h-4" />
+                </svg>
+              </div>
+              <h3>MJML 5 built in</h3>
+              <p>
+                The app comes with MJML 5. You can also point it to your own <code>mjml</code> binary
+                and <code>.mjmlconfig</code> file.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section split" id="figma">
+        <div class="container split-inner">
+          <div class="split-text reveal">
+            <p class="kicker">From design to code</p>
+            <h2>Turn a Figma frame into MJML</h2>
+            <p>
+              The app reads the frame from the Figma desktop app or the Figma API, downloads the
+              images to your project and sends the design to the AI model you choose.
+            </p>
+            <ul class="checks">
+              <li>The result is validated with MJML, and the errors go back to the model</li>
+              <li>A visual check compares a screenshot of the result with the design</li>
+              <li>Your API keys stay encrypted on your computer</li>
+            </ul>
+          </div>
+
+          <div class="flow reveal" aria-hidden="true">
+            <div class="flow-card">
+              <span class="flow-label">Figma</span>
+              <div class="mock-frame">
+                <div class="mf-bar"></div>
+                <div class="mf-title"></div>
+                <div class="mf-line"></div>
+                <div class="mf-line short"></div>
+                <div class="mf-cols"><span></span><span></span><span></span></div>
+                <div class="mf-button"></div>
+              </div>
+            </div>
+            <div class="flow-arrow">
+              <span>AI</span>
+            </div>
+            <div class="flow-card code">
+              <span class="flow-label">MJML</span>
+              <pre><code><span class="t">&lt;mj-section&gt;</span>
+  <span class="t">&lt;mj-column&gt;</span>
+    <span class="t">&lt;mj-text</span> <span class="a">font-size</span>=<span class="s">"28px"</span><span class="t">&gt;</span>
+      Welcome aboard!
+    <span class="t">&lt;/mj-text&gt;</span>
+    <span class="t">&lt;mj-button</span> <span class="a">href</span>=<span class="s">"#"</span><span class="t">&gt;</span>
+      Get started
+    <span class="t">&lt;/mj-button&gt;</span>
+  <span class="t">&lt;/mj-column&gt;</span>
+<span class="t">&lt;/mj-section&gt;</span></code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section split">
+        <div class="container split-inner reverse">
+          <div class="split-text reveal">
+            <p class="kicker">Projects</p>
+            <h2>All your emails in one place</h2>
+            <p>
+              Open a folder and it becomes a project. The list shows a thumbnail of each email, and
+              you can sort, rename and duplicate them. Double-click a <code>.mjml</code> file to
+              open it in the app.
+            </p>
+          </div>
+          <div class="shot small reveal">
+            <picture>
+              <source media="(prefers-color-scheme: dark)" srcset="../assets/projects-dark.png" />
+              <img
+                src="../assets/projects.png"
+                width="1600"
+                height="1002"
+                alt="The project list of MJML App, with a thumbnail of each email"
+                loading="lazy"
+              />
+            </picture>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="download">
+        <div class="container">
+          <div class="section-head reveal">
+            <p class="kicker">Download</p>
+            <h2>Get MJML App <span data-version></span></h2>
+            <p>
+              Free for macOS, Windows and Linux.
+              <a href="https://github.com/ahmetkorkmaz3/mjml-app/blob/master/CHANGELOG.md"
+                >See what is new</a
+              >.
+            </p>
+          </div>
+
+          <div class="downloads">
+            <article class="dl reveal" data-os="mac">
+              <svg class="os-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.75 2.27-1.6 2.78-.41 6.89 1.15 9.14.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.24-.02 2.02-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.84c.63-.77 1.06-1.83.94-2.89-.91.04-2.02.61-2.67 1.37-.58.67-1.1 1.76-.96 2.8 1.02.08 2.06-.52 2.69-1.28z"
+                />
+              </svg>
+              <h3>macOS</h3>
+              <p class="dl-meta">macOS 12 or later</p>
+              <a class="button primary" data-asset="mac-arm64" href="https://github.com/ahmetkorkmaz3/mjml-app/releases/latest"
+                >Apple silicon</a
+              >
+              <a class="button ghost" data-asset="mac-x64" href="https://github.com/ahmetkorkmaz3/mjml-app/releases/latest"
+                >Intel</a
+              >
+            </article>
+
+            <article class="dl reveal" data-os="windows">
+              <svg class="os-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M3 5.5l7.5-1v7H3zM11.5 4.4L21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.4z" />
+              </svg>
+              <h3>Windows</h3>
+              <p class="dl-meta">Windows 10 or later, 64-bit</p>
+              <a class="button primary" data-asset="win-exe" href="https://github.com/ahmetkorkmaz3/mjml-app/releases/latest"
+                >Installer (.exe)</a
+              >
+              <a class="button ghost" data-asset="win-zip" href="https://github.com/ahmetkorkmaz3/mjml-app/releases/latest"
+                >Portable (.zip)</a
+              >
+            </article>
+
+            <article class="dl reveal" data-os="linux">
+              <svg class="os-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 2c-2.2 0-3.6 1.9-3.6 4.6 0 1.4.3 2.3-.6 3.7-1 1.6-2.8 4-2.8 6.3 0 .8.2 1.5.6 2.1-.6.4-1.6.6-1.6 1.5 0 1 1.4 1 3 1.4 1.2.3 2 .9 2.8.9.8 0 1.2-.5 1.6-.9h1.2c.4.4.8.9 1.6.9.8 0 1.6-.6 2.8-.9 1.6-.4 3-.4 3-1.4 0-.9-1-1.1-1.6-1.5.4-.6.6-1.3.6-2.1 0-2.3-1.8-4.7-2.8-6.3-.9-1.4-.6-2.3-.6-3.7C15.6 3.9 14.2 2 12 2zm-1.5 4.2c.4 0 .7.5.7 1.1 0 .6-.3 1.1-.7 1.1-.4 0-.7-.5-.7-1.1 0-.6.3-1.1.7-1.1zm3 0c.4 0 .7.5.7 1.1 0 .6-.3 1.1-.7 1.1-.4 0-.7-.5-.7-1.1 0-.6.3-1.1.7-1.1zM12 9.2c.9 0 2 .6 2 .9 0 .4-1.1 1.1-2 1.1s-2-.7-2-1.1c0-.3 1.1-.9 2-.9z"
+                />
+              </svg>
+              <h3>Linux</h3>
+              <p class="dl-meta">x64</p>
+              <a class="button primary" data-asset="linux-appimage" href="https://github.com/ahmetkorkmaz3/mjml-app/releases/latest"
+                >AppImage</a
+              >
+              <a class="button ghost" data-asset="linux-tar" href="https://github.com/ahmetkorkmaz3/mjml-app/releases/latest"
+                >.tar.gz</a
+              >
+            </article>
+          </div>
+
+          <div class="notice reveal">
+            <h3>The first launch</h3>
+            <p>
+              The installers are not signed, so macOS and Windows show a warning the first time you
+              open the app.
+            </p>
+            <div class="notice-grid">
+              <div>
+                <h4>macOS</h4>
+                <p>Move MJML to Applications, then run this command in Terminal:</p>
+                <div class="command">
+                  <code id="xattr">xattr -dr com.apple.quarantine /Applications/MJML.app</code>
+                  <button type="button" class="copy" data-copy="xattr">Copy</button>
+                </div>
+                <p class="muted">
+                  Or open the app, then go to System Settings › Privacy &amp; Security and click
+                  “Open Anyway”.
+                </p>
+              </div>
+              <div>
+                <h4>Windows</h4>
+                <p>When SmartScreen shows “Windows protected your PC”, click “More info”, then “Run anyway”.</p>
+                <h4>Updates</h4>
+                <p>
+                  On Windows and Linux (AppImage), the app updates itself. On macOS, download the new
+                  <code>.dmg</code> from this page.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section cta">
+        <div class="container cta-inner reveal">
+          <h2>Build it yourself</h2>
+          <p>You need Node.js 24 and Yarn 1. Contributions are welcome.</p>
+          <pre class="terminal"><code><span class="prompt">$</span> git clone https://github.com/ahmetkorkmaz3/mjml-app.git
+<span class="prompt">$</span> cd mjml-app &amp;&amp; yarn
+<span class="prompt">$</span> yarn dev</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
         <p>
-          The presets section will provide a selection of the best community templates using MJML. If you want your template to appear in this section, please <a href="https://github.com/mjmlio/email-templates">submit a pull request</a>.
+          MJML App is a fork of <a href="https://github.com/mjmlio/mjml-app">mjmlio/mjml-app</a>,
+          under the <a href="https://github.com/ahmetkorkmaz3/mjml-app/blob/master/LICENSE">MIT license</a>.
         </p>
+        <nav aria-label="Footer">
+          <a href="https://mjml.io/documentation/">MJML documentation</a>
+          <a href="https://github.com/ahmetkorkmaz3/mjml-app/releases">Releases</a>
+          <a href="https://github.com/ahmetkorkmaz3/mjml-app/issues">Report a bug</a>
+        </nav>
       </div>
-    </div>
-    <div class="col f-1 r">
-      <div class="video-container hero-img" style="width: 500px; height: 423px">
-        <video class="shadow" src="assets/gallery.mp4" width="500px" height="423px" loop autoplay></video>
-      </div>
-    </div>
-  </div>
+    </footer>
 
-  <div class="row" style="margin: 100px 0; min-height: 420px">
-    <div class="col f-1 d-f jc-fe ml-20">
-      <div style="max-width: 450px">
-        <div class="heading">Features</div>
-        <h3>Use the power of <b>MJML</b>, easily.</h3>
-        <p>
-          The MJML App supports out of the box all MJML features. You
-          can see the result in the preview pane as you code, and resize
-          it to see the responsive behaviour in real-time.
-        </p>
-      </div>
-    </div>
-    <div class="col f-1 r">
-      <div class="video-container hero-img" style="width: 500px; height: 396px">
-        <video class="shadow" src="assets/resize.mp4" width="500px" height="396px" loop autoplay></video>
-      </div>
-    </div>
-  </div>
-
-  <div class="row" style="margin: 100px 0; min-height: 440px">
-    <div class="col f-1 d-f jc-fe ml-20">
-      <div style="max-width: 450px">
-        <div class="heading">Features</div>
-        <h3><b>Send</b> test emails to your inbox</h3>
-        <p>
-          The live preview is pretty cool, but the app also provides a way to directly send test emails to your inbox to see the final email on your mobile, desktop and browser clients. You will need a free Mailjet account, with your API Keys, and a valid email address to be used as a sender and recipient.
-        </p>
-      </div>
-    </div>
-    <div class="col f-1 r">
-      <div class="hero-img">
-        <div>
-          <img style="width: 500px; height: auto;" src="assets/send.png">
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="container">
-    <div class="contributors">
-      <a target="_blank" href="https://github.com/meriadec"><img class="big" src="assets/faces/meriadec.png" /></a>
-      <a target="_blank" href="https://github.com/cadxcad"><img class="small" src="assets/faces/carlos.png" /></a>
-      <a target="_blank" href="https://github.com/shubs"><img class="big" src="assets/faces/shub.png" /></a>
-      <a target="_blank" href="https://github.com/ngarnier"><img class="small" src="assets/faces/nico.png" /></a>
-      <a target="_blank" href="https://github.com/GuillaumeBadi"><img class="big" src="https://avatars3.githubusercontent.com/u/6558790?v=3&s=460" /></a>
-      <a target="_blank" href="https://github.com/lohek"><img class="small" src="assets/faces/loek.png" /></a>
-      <a target="_blank" href="https://github.com/iRyusa"><img class="big" src="https://avatars2.githubusercontent.com/u/570317?v=3&s=460" /></a>
-      <a target="_blank" href="https://github.com/robink"><img class="small" src="https://avatars0.githubusercontent.com/u/116530?v=3&s=460" /></a>
-      <a target="_blank" href="https://github.com/arnaudbreton"><img class="big" src="assets/faces/arnaud.png" /></a>
-      <a target="_blank" href="https://github.com/hteumeuleu"><img class="small" src="assets/faces/remi.png" /></a>
-      <a target="_blank" href="https://github.com/swibge"><img class="big" src="assets/faces/mat.png" /></a>
-    </div>
-    <div class="z ta-c">
-      <div style="max-width: 360px">
-        <h2>
-          Be part of the <b>Crew</b>.
-        </h2>
-        <div style="margin-top: 30px">
-          The more, the merrier, agreed? Then join the party and help us make the MJML App even better!
-        </div>
-        <div style="margin-top: 50px">
-          <a target="_blank" href="https://slack.mjml.io/" class="btn-slack">
-            &#35; Join the community on Slack
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer z">
-    <a href="https://mjml.io">
-      <img src="assets/logo-footer.png" style="opacity: 0.5" />
-    </a>
-  </div>
-
-  <!-- Google Tag Manager -->
-  <script type="text/javascript">
-    var dataLayer = [];
-  </script>
-  <noscript>
-    <iframe src="//www.googletagmanager.com/ns.html?id=GTM-BS24" height="0" width="0" style="display:none;visibility:hidden"></iframe>
-  </noscript>
-  <script>
-    (function(w,d,s,l,i){
-      w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], j=d.createElement(s), dl=l!='dataLayer'?'&l='+l:''; j.async=true; j.src='//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-BS24');
-  </script>
-  <!-- End Google Tag Manager -->
-
-  <script type="module" src="./index.js"></script>
-</body>
+    <script type="module" src="./index.js"></script>
+  </body>
 </html>

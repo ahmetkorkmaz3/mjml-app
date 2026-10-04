@@ -21,11 +21,15 @@ yarn prettier:check  # check the formatting
 yarn test            # Vitest unit tests (src/**/*.test.js)
 yarn dist            # compile, then package with electron-builder (output in release/)
 yarn dist:dir        # unpacked, unsigned build (CI uses this)
-yarn site            # dev server for the marketing site in site/
-./deploy             # build the site and force-push it to the gh-pages branch
+yarn site            # dev server for the landing page in site/
+yarn build:site      # build the landing page to dist/
 ```
 
 Unit tests (Vitest) cover the main process code of the Figma import and of the window and menus, and the pure renderer helpers and reducers. A tested renderer module must not import `helpers/api`, because it reads `window`. Tests are next to the code (`*.test.js`) and run in Node.js, so they do not import `electron`. CI (`.github/workflows/ci.yml`) runs `yarn lint`, `yarn prettier:check`, `yarn test` and `yarn dist:dir` on macOS, Linux and Windows. A commit must pass `yarn lint`, `yarn prettier:check` and `yarn test`.
+
+### Landing page
+
+`site/` is the GitHub Pages page (https://ahmetkorkmaz3.github.io/mjml-app/). Vite builds it to `dist/`, and it uses the screenshots of `assets/` and `build/icon.png`. `site/index.js` reads the latest release from the GitHub API and links the download buttons to its files. `.github/workflows/pages.yml` deploys the page when `site/` or these images change on `master`.
 
 ### Release
 
