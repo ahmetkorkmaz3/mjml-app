@@ -38,7 +38,7 @@ Unit tests (Vitest) cover the main process code of the Figma import and of the w
 
 - macOS: arm64 and x64 builds with `identity: null` (ad hoc signature, no notarization). Squirrel.Mac installs only signed updates, so `electron-updater` runs only on Windows and Linux.
 - `electronFuses`: no `ELECTRON_RUN_AS_NODE`, no `NODE_OPTIONS`, no `--inspect`, the app loads only from the checked `app.asar`. Do not spawn `process.execPath` as Node.js. Playwright `_electron.launch` cannot attach to a packaged build (it uses `--inspect`), so start the packaged binary with `--remote-debugging-port` and use `chromium.connectOverCDP`.
-- `snapcraft`: a core24 snap (`mjml-app`) with the gnome extension and strict confinement. `.github/workflows/snap.yml` uploads it to the `candidate` channel when a `v*` tag is pushed, and moves it to `stable` when the release is published (secret `SNAPCRAFT_STORE_CREDENTIALS`). `electron-updater` does not run in the snap (`process.env.SNAP`).
+- `snapcraft`: a core24 snap (`mjml-app`) with the gnome extension and strict confinement. `.github/workflows/snap.yml` uploads it to the `candidate` channel when a `v*` tag is pushed, and moves it to `stable` when the release is published (secret `SNAPCRAFT_STORE_CREDENTIALS`). `electron-updater` does not run in the snap (`process.env.SNAP`). The `browser-support` plug has no `allow-sandbox`, because the store sends it to manual review. So the snap starts with `--no-sandbox`.
 - `files`: the source maps, type declarations, `.md` files and the test, docs and example folders of `node_modules` are not packaged.
 
 ## Architecture

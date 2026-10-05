@@ -94,9 +94,9 @@ snapcraft:
       - network
       # safeStorage keeps the API keys in the keyring of the desktop
       - password-manager-service
-      - browser-sandbox:
-          interface: browser-support
-          allow-sandbox: true
+      # allow-sandbox needs a manual review of the store, so the app starts with
+      # --no-sandbox (electron-builder adds it) and strict confinement isolates it
+      - browser-support
     publish:
       provider: snapStore
       channels:
