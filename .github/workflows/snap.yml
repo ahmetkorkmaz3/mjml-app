@@ -45,7 +45,8 @@ jobs:
           node-version-file: .nvmrc
           cache: yarn
       - uses: canonical/setup-lxd@v1
-      - run: sudo snap install snapcraft --classic
+      # snapcraft 9 does not find the desktop file that electron-builder writes
+      - run: sudo snap install snapcraft --classic --channel=8.x/stable
       - run: yarn install --frozen-lockfile
       - name: Build the snap and upload it to the candidate channel
         run: yarn electron-vite build && yarn electron-builder --linux snap --publish always
