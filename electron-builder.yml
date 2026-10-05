@@ -80,6 +80,11 @@ linux:
 # `yarn dist:snap`. The Snap workflow uploads it to the store.
 snapcraft:
   base: core24
+  # electron-builder reads publish here, not in core24 (the default channel is edge)
+  publish:
+    provider: snapStore
+    channels:
+      - candidate
   core24:
     title: MJML App
     summary: Write MJML emails with a live preview, Figma import with AI and HTML export
@@ -97,10 +102,6 @@ snapcraft:
       # allow-sandbox needs a manual review of the store, so the app starts with
       # --no-sandbox (electron-builder adds it) and strict confinement isolates it
       - browser-support
-    publish:
-      provider: snapStore
-      channels:
-        - candidate
 
 win:
   artifactName: ${name}-${version}-${os}-${arch}.${ext}
