@@ -81,8 +81,8 @@ linux:
 snapcraft:
   base: core24
   core24:
-    title: MJML
-    summary: The desktop app for MJML
+    title: MJML App
+    summary: Write MJML emails with a live preview, Figma import with AI and HTML export
     grade: stable
     confinement: strict
     # snapcraft builds the snap in an LXD container
