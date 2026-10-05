@@ -1,0 +1,59 @@
+name: Snap
+
+# A pushed tag (like the Release workflow) builds the snap and uploads it to the
+# candidate channel of the Snap Store. Install it with
+# `sudo snap install mjml-app --candidate` to test it. When the GitHub release is
+# published, the snap of the candidate channel goes to the stable channel.
+# Run the workflow by hand to build the snap of a branch (build) or to move
+# the candidate snap to stable (promote).
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Build the snap, or move the candidate snap to stable
+        type: choice
+        options:
+          - build
+          - promote
+        default: build
+
+permissions:
+  contents: read
+
+env:
+  SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+
+jobs:
+  build:
+    if: github.event_name == 'push' || inputs.action == 'build'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the credentials
+        run: |
+          if [ -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then
+            echo "::error::The SNAPCRAFT_STORE_CREDENTIALS secret is not set. See CONTRIBUTING.md."
+            exit 1
+          fi
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - uses: canonical/setup-lxd@v1
+      - run: sudo snap install snapcraft --classic
+      - run: yarn install --frozen-lockfile
+      - name: Build the snap and upload it to the candidate channel
+        run: yarn electron-vite build && yarn electron-builder --linux snap --publish always
+
+  promote:
+    if: github.event_name == 'release' || inputs.action == 'promote'
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo snap install snapcraft --classic
+      - name: Move the candidate snap to the stable channel
+        run: snapcraft promote mjml-app --from-channel latest/candidate --to-channel latest/stable --yes

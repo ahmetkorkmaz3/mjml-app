@@ -108,6 +108,14 @@ The maintainer makes the releases. The `Release` workflow (`.github/workflows/re
 
 When you publish the release, the `Homebrew` workflow (`.github/workflows/homebrew.yml`) sets the version and the `sha256` values in `homebrew/mjml-app.rb` and pushes the cask to [ahmetkorkmaz3/homebrew-tap](https://github.com/ahmetkorkmaz3/homebrew-tap). The workflow needs the `HOMEBREW_TAP_TOKEN` secret: a fine-grained token with "Contents: Read and write" access to `homebrew-tap`. To push the cask of an old release again, run the workflow by hand with the tag. Edit the cask in `homebrew/mjml-app.rb`, not in the tap.
 
+When you push the tag, the `Snap` workflow (`.github/workflows/snap.yml`) builds the snap and uploads it to the `candidate` channel of the Snap Store. To test it, run `sudo snap install mjml-app --candidate`. When you publish the release, the workflow moves the snap from `candidate` to `stable`. To build the snap or move it to `stable` without a tag, run the workflow by hand and select `build` or `promote`. The workflow needs the `SNAPCRAFT_STORE_CREDENTIALS` secret. To make it:
+
+1. Register the name once: `snapcraft register mjml-app`.
+2. Export the credentials: `snapcraft export-login --snaps=mjml-app --acls=package_access,package_push,package_update,package_release -`.
+3. Add the output as the `SNAPCRAFT_STORE_CREDENTIALS` secret of the repository.
+
+To build the snap on Linux, install `snapcraft` and LXD, then run `yarn dist:snap`. The snap uses strict confinement. It cannot run a `mjml` binary of the system, so use the bundled MJML engine in the snap.
+
 The installed apps find the update only after you publish the release. The workflow does not sign the macOS app or the Windows installer, and it does not notarize the macOS app.
 
 ## License

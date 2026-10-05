@@ -353,8 +353,9 @@ app.whenReady().then(async () => {
   }
   mainWindow = await createMainWindow()
   rebuildMenu()
-  // Squirrel.Mac installs only signed updates, the macOS build is not signed
-  if (!isDevelopment && process.platform !== 'darwin') {
+  // Squirrel.Mac installs only signed updates, the macOS build is not signed.
+  // The Snap Store updates the snap, and the snap cannot write its own files.
+  if (!isDevelopment && process.platform !== 'darwin' && !process.env.SNAP) {
     // no network or no release feed must not stop the app
     autoUpdater.on('error', err => console.error('Update check failed:', err.message))
     autoUpdater.checkForUpdatesAndNotify().catch(() => {})
